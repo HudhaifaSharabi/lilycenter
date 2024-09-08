@@ -1,9 +1,9 @@
 [project]
 name = "lilycenter"
 authors = [
-    { name = "hudhaifa", email = "alsharabihudhaif@gmail.com"}
+    { name = "hudhifa", email = "alsharabihudhaif@gmail.com"}
 ]
-description = "For Beauty and spa"
+description = "for Beauty and spa"
 requires-python = ">=3.10"
 readme = "README.md"
 dynamic = ["version"]

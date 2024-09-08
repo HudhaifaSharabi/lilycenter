@@ -1,7 +1,7 @@
 app_name = "lilycenter"
 app_title = "Lilycenter"
-app_publisher = "hudhaifa"
-app_description = "For Beauty and spa"
+app_publisher = "hudhifa"
+app_description = "for Beauty and spa"
 app_email = "alsharabihudhaif@gmail.com"
 app_license = "mit"
 # required_apps = []
