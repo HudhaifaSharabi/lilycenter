@@ -1,0 +1,80 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "naming_series:",
+ "creation": "2024-10-14 01:39:06.151991",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "discount_name",
+  "service",
+  "discount_rate",
+  "statues"
+ ],
+ "fields": [
+  {
+   "fieldname": "service",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "\u0627\u0644\u062e\u062f\u0645\u0629",
+   "options": "Service",
+   "reqd": 1
+  },
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Data",
+   "label": "Naming Series",
+   "options": "SER-DIS-",
+   "read_only": 1
+  },
+  {
+   "fieldname": "discount_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "\u0627\u0633\u0645 \u0627\u0644\u062e\u0635\u0645",
+   "reqd": 1
+  },
+  {
+   "fieldname": "discount_rate",
+   "fieldtype": "Float",
+   "label": "\u0646\u0633\u0628\u0629 \u0627\u0644\u062e\u0635\u0645",
+   "non_negative": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "statues",
+   "fieldtype": "Select",
+   "label": "Statues",
+   "options": "\nActive\nunActive",
+   "reqd": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2024-10-14 01:55:42.107319",
+ "modified_by": "Administrator",
+ "module": "Lilycenter",
+ "name": "Service Discount",
+ "naming_rule": "By \"Naming Series\" field",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "show_title_field_in_link": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "discount_name"
+}
