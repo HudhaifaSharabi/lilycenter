@@ -1,0 +1,198 @@
+:root {
+    /* Define your primary and secondary colors here */
+    /* --primary-color: #2f4f4f;
+    --secondary-color: #c9ad88;
+    --tertiary-color: #c9ad88; */
+    --primary-color: #619f9e;
+    --secondary-color: #619f9e;
+    --tertiary-color: #387877;
+    --text-color: #ffffff;
+    --black-color: #000000;
+    --gray-color: #ececec;
+}
+
+/* Change the navbar background */
+.navbar,
+.navbar-default,
+.navbar-inverse {
+    background-color: var(--tertiary-color) !important;
+    color: var(--text-color) !important;
+}
+
+.navbar {
+    border-bottom: 1px solid var(--primary-color)
+}
+
+/* Customize buttons */
+.btn-primary,
+.btn-success {
+    background-color: var(--tertiary-color) !important;
+    border-color: var(--text-color) !important;
+    color: var(--text-color) !important;
+}
+
+/* Sidebar customization */
+.page-head,
+.layout-main-section:not(.layout-main-section .form-page) {
+    background-color: var(--primary-color) !important;
+}
+
+.widget.onboarding-widget-box {
+    background-color: var(--primary-color) !important;
+    color: var(--text-color) !important;
+}
+
+.widget.onboarding-widget-box .widget-body .onboarding-step.active,
+.widget.onboarding-widget-box .widget-body .onboarding-step:hover {
+    background-color: var(--tertiary-color) !important;
+    color: var(--text-color) !important;
+}
+
+.btn-default {
+    background-color: var(--gray-color) !important;
+    border-color: var(--black-color) !important;
+    color: var(--black-color) !important;
+}
+
+.btn-secondary {
+    background-color: var(--tertiary-color) !important;
+    border-color: var(--tertiary-color) !important;
+    color: var(--text-color) !important;
+}
+
+
+
+/* [data-page-route=Workspaces] .widget.number-widget-box,
+.widget.dashboard-widget-box,
+.widget.shortcut-widget-box,
+.widget {
+    background-color: var(--gray-color) !important;
+    color: var(--black-color) !important;
+} */
+
+
+
+.number {
+    color: var(--tertiary-color) !important;
+}
+
+.hidden-xs {
+    color: var(--text-color);
+}
+
+.list-row:hover {
+    background-color: var(--tertiary-color) !important;
+    border-color: var(--tertiary-color) !important;
+    color: var(--text-color) !important;
+}
+
+.form-page {
+    background-color: var(--primary-color) !important;
+    border-color: var(--tertiary-color) !important;
+    color: var(--text-color) !important;
+}
+
+.form-page label {
+    color: var(--text-color) !important;
+}
+
+/* Specific styling for select and input elements to display black text */
+select,
+input,
+a {
+    color: var(--black-color) !important;
+}
+
+input {
+    background-color: var(--text-color);
+    /* Ensures text is black */
+
+}
+
+/* Option styling for select dropdowns */
+select option {
+    color: var(--text-color) !important;
+    /* Ensures option text is black */
+    background-color: #387877;
+    /* Matches tertiary color */
+}
+
+.layout-main-section-wrapper {
+    background-color: var(--gray-color) !important;
+
+}
+
+body,
+.page-container {
+    background-color: var(--gray-color) !important;
+}
+
+.form-tabs-list,
+.page-form,
+.modal-header,
+.modal-body,
+.modal-footer {
+    background-color: var(--primary-color) !important;
+    border-color: var(--tertiary-color) !important;
+    color: var(--text-color) !important;
+
+}
+
+.form-tabs-list .nav-link {
+    color: white;
+}
+
+.label-area {
+    color: white;
+}
+
+.layout-main-section {
+    border-radius: 10%;
+}
+
+.widget-title span,
+span.sidebar-item-label,
+span.button-label,
+span.custom-btn-group-label,
+.page-form .filter-selector .btn-group .filter-labe,
+.awesomplete>ul>li,
+.widget.shortcut-widget-box .indicator-pill,
+.form-sidebar-items span,
+div.standard-sidebar-label,
+div.combo-box-items,
+div.table-field.ellipsis,
+button.dropdown-item,
+textarea.form-control,
+textarea.form-control:focus {
+    color: #000000;
+}
+
+div.form-section-container[data-v-080adc2e],
+div.column[data-v-080adc2e] {
+    background-color: var(--primary-color);
+
+}
+
+div.tab-header[data-v-afa84ab3] {
+
+    background-color: var(--primary-color);
+    border-bottom: 1px solid var(--primary-color);
+
+}
+
+div.form-container[data-v-afa84ab3] {
+    background-color: var(--primary-color);
+
+}
+
+div.field[data-v-43f9e43e] {
+    background-color: var(--primary-color);
+}
+
+div.small.form-clickable-section.grid-footer {
+    background-color: var(--primary-color);
+}
+
+.datepicker {
+    background-color: var(--primary-color);
+}

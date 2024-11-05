@@ -1,0 +1,76 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "naming_series:",
+ "creation": "2024-09-22 20:03:46.806335",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "worker",
+  "worker_name",
+  "service_name",
+  "commission"
+ ],
+ "fields": [
+  {
+   "fieldname": "worker",
+   "fieldtype": "Link",
+   "label": "Worker",
+   "options": "Employee"
+  },
+  {
+   "default": "Today",
+   "fieldname": "commission",
+   "fieldtype": "Table",
+   "label": "\u062a\u0641\u0627\u0635\u064a\u0644 \u0627\u0644\u0639\u0645\u0648\u0644\u0629",
+   "options": "Commission Details"
+  },
+  {
+   "fetch_from": "worker.employee_name",
+   "fieldname": "worker_name",
+   "fieldtype": "Data",
+   "label": "Worker Name"
+  },
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Data",
+   "label": "Naming Series",
+   "options": "WOR-COM-",
+   "read_only": 1
+  },
+  {
+   "fieldname": "service_name",
+   "fieldtype": "Link",
+   "label": "Service",
+   "options": "Service"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2024-09-23 00:30:09.958286",
+ "modified_by": "Administrator",
+ "module": "Lilycenter",
+ "name": "Worker Commission",
+ "naming_rule": "By \"Naming Series\" field",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "show_title_field_in_link": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "worker_name"
+}

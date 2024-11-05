@@ -1,0 +1,76 @@
+:root {
+    /* Define your primary and secondary colors here */
+    /* --primary-color: #2f4f4f;
+    --secondary-color: #c9ad88;
+    --tertiary-color: #c9ad88; */
+    --primary-color: #619f9e;
+    --secondary-color: #619f9e;
+    --tertiary-color: #387877;
+    --text-color: #ffffff;
+    --black-color: #000000;
+    --gray-color: #ececec;
+}
+.navbar, .navbar-default, .navbar-inverse {
+    background-color: var(--tertiary-color) !important;
+    color: var(--text-color) !important;
+}
+
+body ,.page-container{
+    background-color: var(--primary-color) !important;
+}
+.page-head{
+    background-color: var(--primary-color) !important;
+}
+.layout-main-section{
+    background-color: var(--gray-color) !important;
+}
+.widget.onboarding-widget-box {
+    background-color: var(--gray-color) !important;
+    color: var(--black-color) !important;
+}
+.widget.onboarding-widget-box .widget-body .onboarding-step{
+    color: var(--black-color) !important;
+
+}
+.widget.onboarding-widget-box .widget-body .onboarding-step.active, 
+.widget.onboarding-widget-box .widget-body .onboarding-step:hover {
+    background-color: var(--tertiary-color) !important;
+    color: var(--text-color) !important;
+}
+.btn-secondary {
+    background-color: var(--tertiary-color) !important;
+    border-color: var(--tertiary-color) !important;
+    color: var(--text-color) !important;
+}
+
+.btn-default {
+    background-color: var(--gray-color) !important;
+    border-color: var(--black-color) !important;
+    color: var(--black-color) !important;
+}
+.btn-primary, .btn-success {
+    background-color: var(--tertiary-color) !important;
+    border-color: var(--text-color) !important;
+    color: var(--text-color) !important;
+}
+
+[data-page-route=Workspaces] .widget.number-widget-box,
+.widget.dashboard-widget-box,
+.widget.shortcut-widget-box,
+.widget {
+    background-color: var(--text-color) !important;
+    color: var(--black-color) !important;
+}
+
+
+span {
+    color: var(--black-color) !important;
+}
+
+.number {
+    color: var(--tertiary-color) !important;
+}
+
+.hidden-xs {
+    color: var(--text-color);
+}

@@ -1,0 +1,104 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-09-22 20:59:30.863386",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "worker",
+  "service_name",
+  "commission_rate",
+  "price_of_service",
+  "worker_salary",
+  "date",
+  "account_section",
+  "commission_account",
+  "column_break_owmo",
+  "employee_account"
+ ],
+ "fields": [
+  {
+   "fieldname": "worker",
+   "fieldtype": "Link",
+   "label": "Worker",
+   "options": "Employee",
+   "reqd": 1
+  },
+  {
+   "default": "Today",
+   "fieldname": "date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "commission_rate",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Commission Rate",
+   "reqd": 1
+  },
+  {
+   "fieldname": "price_of_service",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Price of Service",
+   "reqd": 1
+  },
+  {
+   "fieldname": "worker_salary",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Worker Salary",
+   "reqd": 1
+  },
+  {
+   "fieldname": "service_name",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Service",
+   "options": "Service",
+   "reqd": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "account_section",
+   "fieldtype": "Section Break",
+   "label": "Account"
+  },
+  {
+   "fetch_from": "service_name.commission_account",
+   "fieldname": "commission_account",
+   "fieldtype": "Link",
+   "label": "\u062d\u0633\u0627\u0628 \u0627\u0644\u0639\u0645\u0648\u0644\u0647",
+   "options": "Account",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_owmo",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "worker.employee_account",
+   "fieldname": "employee_account",
+   "fieldtype": "Link",
+   "label": "\u062d\u0633\u0627\u0628 \u0627\u0644\u0645\u0648\u0638\u0641",
+   "options": "Account",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2024-10-14 03:18:58.504134",
+ "modified_by": "Administrator",
+ "module": "Lilycenter",
+ "name": "Reception Commission",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

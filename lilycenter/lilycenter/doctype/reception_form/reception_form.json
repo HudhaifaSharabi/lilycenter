@@ -1,0 +1,188 @@
+{
+ "actions": [
+  {
+   "action": "booking",
+   "action_type": "Route",
+   "label": "booking"
+  }
+ ],
+ "allow_rename": 1,
+ "autoname": "naming_series:",
+ "creation": "2024-09-10 23:31:18.487297",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "\u0645\u0639\u0644\u0648\u0645\u0627\u062a_\u0631\u0626\u064a\u0633\u064a\u0629_section",
+  "naming_series",
+  "customer",
+  "column_break_xaxw",
+  "section_break_vnpc",
+  "services",
+  "total",
+  "amended_from",
+  "payments_tab",
+  "\u0645\u0639\u0644\u0648\u0645\u0627\u062a_\u0627\u0644\u062f\u0641\u0639_section",
+  "payments",
+  "total_payment",
+  "materials_tab",
+  "\u0645\u0639\u0644\u0648\u0645\u0627\u062a_\u0627\u0644\u0645\u0648\u0627\u062f_section",
+  "materials",
+  "commission_tab",
+  "\u0639\u0645\u0648\u0644\u0647_\u0627\u0644\u0645\u0648\u0638\u0641\u064a\u0646_section",
+  "worker_commission"
+ ],
+ "fields": [
+  {
+   "fieldname": "materials",
+   "fieldtype": "Table",
+   "label": "\u0627\u0644\u0645\u0648\u0627\u062f \u0627\u0644\u0645\u0633\u062a\u062e\u062f\u0645\u0647",
+   "options": "Service Material",
+   "read_only": 1
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Reception Form",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "services",
+   "fieldtype": "Table",
+   "label": "\u0627\u0644\u062e\u062f\u0645\u0627\u062a",
+   "options": "Reception Service",
+   "reqd": 1
+  },
+  {
+   "fieldname": "materials_tab",
+   "fieldtype": "Tab Break",
+   "label": "materials",
+   "read_only": 1
+  },
+  {
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "\u0627\u0644\u0639\u0645\u064a\u0644",
+   "options": "Customer",
+   "reqd": 1
+  },
+  {
+   "fieldname": "\u0645\u0639\u0644\u0648\u0645\u0627\u062a_\u0631\u0626\u064a\u0633\u064a\u0629_section",
+   "fieldtype": "Section Break",
+   "label": "\u0645\u0639\u0644\u0648\u0645\u0627\u062a \u0631\u0626\u064a\u0633\u064a\u0629"
+  },
+  {
+   "fieldname": "payments_tab",
+   "fieldtype": "Tab Break",
+   "label": "Payments"
+  },
+  {
+   "fieldname": "\u0645\u0639\u0644\u0648\u0645\u0627\u062a_\u0627\u0644\u062f\u0641\u0639_section",
+   "fieldtype": "Section Break",
+   "label": "\u0645\u0639\u0644\u0648\u0645\u0627\u062a \u0627\u0644\u062f\u0641\u0639"
+  },
+  {
+   "fieldname": "\u0645\u0639\u0644\u0648\u0645\u0627\u062a_\u0627\u0644\u0645\u0648\u0627\u062f_section",
+   "fieldtype": "Section Break",
+   "label": "\u0645\u0639\u0644\u0648\u0645\u0627\u062a \u0627\u0644\u0645\u0648\u0627\u062f"
+  },
+  {
+   "fieldname": "payments",
+   "fieldtype": "Table",
+   "label": "\u0627\u0644\u0645\u062f\u0641\u0648\u0639\u0627\u062a",
+   "options": "Reception Payments",
+   "reqd": 1
+  },
+  {
+   "fieldname": "total_payment",
+   "fieldtype": "Data",
+   "label": "\u0627\u0644\u0645\u062c\u0645\u0648\u0639",
+   "options": "0",
+   "read_only": 1
+  },
+  {
+   "fieldname": "total",
+   "fieldtype": "Data",
+   "label": "\u0627\u0644\u0645\u062c\u0645\u0648\u0639",
+   "options": "0",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Data",
+   "label": "Naming Series",
+   "options": "REC-",
+   "read_only": 1
+  },
+  {
+   "fieldname": "commission_tab",
+   "fieldtype": "Tab Break",
+   "label": "Commission",
+   "read_only": 1
+  },
+  {
+   "fieldname": "\u0639\u0645\u0648\u0644\u0647_\u0627\u0644\u0645\u0648\u0638\u0641\u064a\u0646_section",
+   "fieldtype": "Section Break",
+   "label": "\u0627\u0644\u0639\u0645\u0648\u0644\u0629"
+  },
+  {
+   "fieldname": "worker_commission",
+   "fieldtype": "Table",
+   "label": "Worker Commission",
+   "options": "Reception Commission",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_xaxw",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_vnpc",
+   "fieldtype": "Section Break"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2024-11-05 17:08:40.570575",
+ "modified_by": "Administrator",
+ "module": "Lilycenter",
+ "name": "Reception Form",
+ "naming_rule": "By \"Naming Series\" field",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "cancel": 1,
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "reception",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

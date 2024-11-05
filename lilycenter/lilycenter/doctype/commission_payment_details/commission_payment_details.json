@@ -1,0 +1,54 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-09-23 16:58:10.993063",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "service_name",
+  "commission_rate",
+  "price_of_service",
+  "worker_salary"
+ ],
+ "fields": [
+  {
+   "fieldname": "service_name",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Service",
+   "options": "Service"
+  },
+  {
+   "fieldname": "commission_rate",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Commission Rate"
+  },
+  {
+   "fieldname": "price_of_service",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Price of Service"
+  },
+  {
+   "fieldname": "worker_salary",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Worker Salary"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2024-09-23 16:58:36.555137",
+ "modified_by": "Administrator",
+ "module": "Lilycenter",
+ "name": "Commission Payment Details",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
