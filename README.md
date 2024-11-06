@@ -1,5 +1,7 @@
-LilyCenter App
+# LilyCenter App
+
 This is a brief description of the LilyCenter app.
 
-Installation
+## Installation
+
 Instructions to install and use the app.
