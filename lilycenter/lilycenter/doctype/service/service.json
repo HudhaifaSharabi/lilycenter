@@ -11,6 +11,7 @@
   "category",
   "column_break_uxqq",
   "price",
+  "duration",
   "naming_series",
   "section_break_tuqk",
   "table_material",
@@ -18,8 +19,7 @@
   "income_account",
   "discount_account",
   "column_break_osor",
-  "commission_account",
-  "tab_2_tab"
+  "commission_account"
  ],
  "fields": [
   {
@@ -62,6 +62,7 @@
    "fieldtype": "Currency",
    "in_list_view": 1,
    "label": "\u0627\u0644\u0633\u0639\u0631",
+   "non_negative": 1,
    "reqd": 1
   },
   {
@@ -108,14 +109,17 @@
    "label": "\u0627\u0644\u062e\u062f\u0645\u0629"
   },
   {
-   "fieldname": "tab_2_tab",
-   "fieldtype": "Tab Break",
-   "label": "\u0627\u0644\u062e\u0635\u0648\u0645\u0627\u062a"
+   "default": "01:00:00",
+   "description": "\u0627\u0644\u0648\u0642\u062a \u0627\u0644\u0645\u0637\u0644\u0648\u0628 \u0644\u0643\u0644 \u062e\u062f\u0645\u0647",
+   "fieldname": "duration",
+   "fieldtype": "Time",
+   "label": "\u0648\u0642\u062a \u0627\u0644\u062e\u062f\u0645\u0629",
+   "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-10-14 01:36:56.262669",
+ "modified": "2024-11-08 00:05:50.075275",
  "modified_by": "Administrator",
  "module": "Lilycenter",
  "name": "Service",

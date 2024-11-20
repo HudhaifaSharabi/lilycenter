@@ -4,9 +4,28 @@
 frappe.ui.form.on("Booking", {
  
 	refresh(frm) {
-
+        frm.add_custom_button(__('الاستقبال'), function() {
+            // Route to the Reception Form with the current booking ID
+            frappe.set_route('Form', 'Reception Form', {
+                // booking_id: frm.doc.name,      // Pass current booking's ID
+                // customer: frm.doc.customer     // Pass customer information
+            });
+            });
 	},
+    booking_date: function(frm) {
+        // Get today's date
+        let today = frappe.datetime.get_today();
+        let selected_date = frm.doc.booking_date;
+
+        // Compare dates
+        if (selected_date < today) {
+            frappe.msgprint(__('لا يمكن اختيار تاريخ قبل اليوم')); // رسالة خطأ بالعربي
+            frm.set_value('booking_date', today);
+        }
+    },
 	onload: function (frm) {
+        // Add date validation
+        
         // Filter `paid_to` field
         frm.set_query('paid_to', 'payments', function () {
             return {
@@ -49,13 +68,120 @@ frappe.ui.form.on("Booking", {
 });
 
 frappe.ui.form.on('Reception Service', {
+    time: function(frm, cdt, cdn) {
+        let current_row = locals[cdt][cdn];
+        // Check for duplicate time in the same category
+        let duplicate_found = frm.doc.services.some(row => {
+            // Exclude current row from check
+            if (row.name !== current_row.name) {
+                let start_time = convertToDateTime(row.time);
+                let end_time = getEndTime(start_time, row.duration);
+    
+                let current_start_time = convertToDateTime(current_row.time);
+                let current_end_time = getEndTime(current_start_time, current_row.duration);
+    
+                // تحقق من التداخل بين الخدمة الحالية والخدمات الأخرى بغض النظر عن الفئة
+                return (current_start_time < end_time && current_end_time > start_time);
+            }
+            return false;
+        });
+    
+        if (duplicate_found) {
+            frappe.msgprint({
+                title: __('تعارض في المواعيد'),
+                message: __('لا يمكن للعميل تلقي خدمتين في نفس الوقت. الرجاء اختيار وقت آخر للخدمة.'),
+                indicator: 'red'
+            });
+            frappe.model.set_value(cdt, cdn, 'time', '');
+        }
+        // Check if time and category are not empty
+        if (!current_row.time || !current_row.category) {
+            return;
+        }
+
+        let duration = current_row.duration || '1:00:00';
+
+        // التحقق من توفر الموعد في القسم
+        frappe.call({
+            method: 'lilycenter.lilycenter.doctype.booking.booking.check_slot_availability',
+            args: {
+                category: current_row.category,
+                time: current_row.time,
+                duration: duration,
+                booking_date: frm.doc.booking_date
+            },
+            callback: function(r) {
+                if (r.message) {
+                    if (r.message.error) {
+                        frappe.msgprint({
+                            title: __('خطأ'),
+                            message: __(r.message.error),
+                            indicator: 'red'
+                        });
+                        return;
+                    }
+
+                    if (!r.message.available) {
+                        let debug_info = r.message.debug_info || {};
+                        let existing_services = debug_info.existing_services || [];
+                        
+                        // تنسيق الوقت بشكل أفضل
+                        let formattedServices = existing_services.map(service => {
+                            let timeStr = service.time.padStart(8, '0');
+                            return `• ${timeStr} (${service.duration} دقيقة)`;
+                        }).join('\n');
+
+                        let message = `
+                            عذراً، هذا الموعد غير متاح في تاريخ ${debug_info.booking_date}.
+
+                            معلومات القسم:
+                            • القسم: ${current_row.category}
+                            • السعة القصوى: ${debug_info.section_capacity} عميل في نفس الوقت
+
+                            الموعد المطلوب:
+                            • الوقت: ${current_row.time}
+                            • المدة: ${debug_info.duration} دقيقة
+
+                            المواعيد الحالية:
+                            ${formattedServices}
+
+                            الرجاء اختيار وقت آخر.`;
+
+                        frappe.msgprint({
+                            title: __('الموعد غير متاح'),
+                            message: __(message),
+                            indicator: 'red'
+                        });
+                        frappe.model.set_value(cdt, cdn, 'time', '');
+                    } else {
+                        frappe.show_alert({
+                            message: __(`تم حجز الموعد في ${current_row.category} الساعة ${current_row.time}`),
+                            indicator: 'green'
+                        }, 5);
+                    }
+                }
+            }
+        });
+    },
+
     service_name: function(frm, cdt, cdn) {
         // When the value of service_name changes, clear the worker field
         let row = locals[cdt][cdn];
-        frappe.model.set_value(cdt, cdn, 'employee_account', null);
-        frappe.model.set_value(cdt, cdn, 'worker', null);
-        frappe.model.set_value(cdt, cdn, 'discount', null);
-        frappe.model.set_value(cdt, cdn, 'discount_rate', null);  // Set worker to null when service_name changes
+        if (row.service_name) {
+            frappe.db.get_value('Item Group', row.category, 'section_capacity', function(result) {
+                if (result && result.section_capacity) {
+                    frappe.model.set_value(cdt, cdn, 'section_capacity', result.section_capacity);
+                }
+            });
+        }
+        else{
+            frappe.model.set_value(cdt, cdn, 'employee_account', null);
+            frappe.model.set_value(cdt, cdn, 'worker', null);
+            frappe.model.set_value(cdt, cdn, 'discount', null);
+            frappe.model.set_value(cdt, cdn, 'discount_rate', null);
+            frappe.model.set_value(cdt, cdn, 'time', null);
+            frappe.model.set_value(cdt, cdn, 'section_capacity', null);
+        }  // Set worker to null when service_name changes
     },
 
     
