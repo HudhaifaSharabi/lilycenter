@@ -50,7 +50,9 @@
   {
    "fieldname": "customer",
    "fieldtype": "Link",
+   "in_filter": 1,
    "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "\u0627\u0644\u0639\u0645\u064a\u0644",
    "options": "Customer",
    "reqd": 1
@@ -89,19 +91,28 @@
   {
    "fieldname": "booking_date",
    "fieldtype": "Date",
+   "in_filter": 1,
+   "in_list_view": 1,
+   "in_preview": 1,
+   "in_standard_filter": 1,
    "label": "Date",
    "reqd": 1
   },
   {
    "fieldname": "booking_status",
    "fieldtype": "Select",
+   "in_filter": 1,
+   "in_list_view": 1,
+   "in_preview": 1,
+   "in_standard_filter": 1,
    "label": "\u062d\u0627\u0644\u0629 \u0627\u0644\u062d\u062c\u0632",
-   "options": "\u0645\u0624\u0643\u062f\n\u0645\u0644\u063a\u064a\n\u062a\u0645 \u0627\u0644\u0627\u0633\u062a\u0642\u0628\u0627\u0644"
+   "options": "\u0645\u0624\u0643\u062f\n\u0645\u0644\u063a\u064a\n\u062a\u0645 \u0627\u0644\u0627\u0633\u062a\u0642\u0628\u0627\u0644",
+   "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-11-07 23:42:34.664401",
+ "modified": "2024-11-21 22:24:45.355686",
  "modified_by": "Administrator",
  "module": "Lilycenter",
  "name": "Booking",
@@ -119,6 +130,16 @@
    "role": "System Manager",
    "share": 1,
    "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "reception",
+   "share": 1
   }
  ],
  "search_fields": "customer,booking_date,mobile_no",

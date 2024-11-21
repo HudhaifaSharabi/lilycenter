@@ -6,3 +6,36 @@
 
 // 	},
 // });
+
+frappe.ui.form.on('Commission Payment Details', {
+    service_name: function(frm, cdt, cdn) {
+        let row = locals[cdt][cdn];
+        if (!row.service_name) {
+            frappe.model.set_value(cdt,cdn,'commission_rate',null)
+            frappe.model.set_value(cdt,cdn,'worker_salary',null)
+            frappe.throw(__('يجب تحديد  خدمة'));
+        }else{
+            calculate_commission(cdt,cdn);
+        }
+
+        // Bank payment validation
+
+    },
+
+    commission_rate: function(frm, cdt, cdn) {
+        let row = locals[cdt][cdn];
+        if (!row.commission_rate || row.commission_rate > 100 || row.commission_rate <= 0  ) {
+                frappe.model.set_value(cdt,cdn,'commission_rate',null)
+                frappe.model.set_value(cdt,cdn,'worker_salary','')
+            frappe.throw(__('يجب أن يكون نسبة العمولة أقل من 100 وأكبر من 0'));
+        }
+        else{
+            calculate_commission(cdt,cdn);
+        }
+    }
+});
+function calculate_commission(cdt,cdn) {
+    let row = locals[cdt][cdn];
+    let commission =(row.price_of_service* row .commission_rate)/100;
+    frappe.model.set_value(cdt,cdn,'worker_salary',commission)
+}

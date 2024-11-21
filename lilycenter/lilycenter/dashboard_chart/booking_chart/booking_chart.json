@@ -10,18 +10,22 @@
  "dynamic_filters_json": "[]",
  "filters_json": "[]",
  "group_by_type": "Count",
- "idx": 0,
+ "idx": 14,
  "is_public": 0,
  "is_standard": 1,
- "last_synced_on": "2024-11-08 02:00:29.465340",
- "modified": "2024-11-08 02:00:45.055776",
+ "last_synced_on": "2024-11-21 22:25:13.835812",
+ "modified": "2024-11-21 22:25:37.758755",
  "modified_by": "Administrator",
  "module": "Lilycenter",
  "name": "Booking chart",
  "number_of_groups": 0,
  "owner": "Administrator",
  "parent_document_type": "",
- "roles": [],
+ "roles": [
+  {
+   "role": "System Manager"
+  }
+ ],
  "source": "",
  "time_interval": "Daily",
  "timeseries": 1,

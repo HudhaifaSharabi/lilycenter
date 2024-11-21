@@ -34,6 +34,7 @@
    "fieldtype": "Table",
    "label": "\u0627\u0644\u0645\u0648\u0627\u062f \u0627\u0644\u0645\u0633\u062a\u062e\u062f\u0645\u0647",
    "options": "Service Material",
+   "permlevel": 1,
    "read_only": 1
   },
   {
@@ -131,6 +132,7 @@
    "fieldtype": "Table",
    "label": "Worker Commission",
    "options": "Reception Commission",
+   "permlevel": 1,
    "read_only": 1
   },
   {
@@ -178,7 +180,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-11-08 03:36:47.545915",
+ "modified": "2024-11-21 22:24:18.972229",
  "modified_by": "Administrator",
  "module": "Lilycenter",
  "name": "Reception Form",
@@ -207,6 +209,17 @@
    "read": 1,
    "report": 1,
    "role": "reception",
+   "share": 1
+  },
+  {
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "permlevel": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
    "share": 1,
    "write": 1
   }

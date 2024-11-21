@@ -58,6 +58,7 @@
    "reqd": 1
   },
   {
+   "fetch_from": "service_name.standard_rate",
    "fieldname": "price",
    "fieldtype": "Currency",
    "in_list_view": 1,
@@ -119,7 +120,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-11-08 00:05:50.075275",
+ "modified": "2024-11-20 13:44:01.341394",
  "modified_by": "Administrator",
  "module": "Lilycenter",
  "name": "Service",
