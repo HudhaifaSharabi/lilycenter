@@ -6,6 +6,7 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "section_break_awzl",
   "worker",
   "naming_series",
   "column_break_mxle",
@@ -64,11 +65,16 @@
    "print_hide": 1,
    "read_only": 1,
    "search_index": 1
+  },
+  {
+   "fieldname": "section_break_awzl",
+   "fieldtype": "Section Break",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-11-21 21:22:28.686592",
+ "modified": "2024-12-03 05:25:48.188330",
  "modified_by": "Administrator",
  "module": "Lilycenter",
  "name": "Commission Payment",
@@ -86,6 +92,16 @@
    "role": "System Manager",
    "share": 1,
    "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "reception",
+   "select": 1,
+   "share": 1
   }
  ],
  "sort_field": "modified",

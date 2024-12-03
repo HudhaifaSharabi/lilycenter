@@ -178,9 +178,10 @@
   }
  ],
  "index_web_pages_for_search": 1,
+ "is_calendar_and_gantt": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-11-21 22:24:18.972229",
+ "modified": "2024-12-03 05:38:11.918579",
  "modified_by": "Administrator",
  "module": "Lilycenter",
  "name": "Reception Form",
@@ -202,16 +203,6 @@
    "write": 1
   },
   {
-   "create": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "reception",
-   "share": 1
-  },
-  {
    "delete": 1,
    "email": 1,
    "export": 1,
@@ -222,9 +213,18 @@
    "role": "System Manager",
    "share": 1,
    "write": 1
+  },
+  {
+   "create": 1,
+   "print": 1,
+   "read": 1,
+   "role": "reception",
+   "select": 1,
+   "write": 1
   }
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
- "states": []
+ "states": [],
+ "track_changes": 1
 }

@@ -18,19 +18,21 @@
    "reqd": 1
   },
   {
+   "default": "Today",
    "fieldname": "effective_date",
    "fieldtype": "Datetime",
    "in_list_view": 1,
    "label": "\u062a\u0627\u0631\u064a\u062e \u062a\u0641\u0639\u064a\u0644 \u0627\u0644\u0639\u0645\u0648\u0644\u0629",
    "no_copy": 1,
    "read_only": 1,
+   "reqd": 1,
    "search_index": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2024-11-21 21:29:34.391323",
+ "modified": "2024-11-30 03:14:21.277487",
  "modified_by": "Administrator",
  "module": "Lilycenter",
  "name": "Commission Details",
