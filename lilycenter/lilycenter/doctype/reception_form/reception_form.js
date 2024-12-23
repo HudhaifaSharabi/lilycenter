@@ -22,7 +22,11 @@ function open_booking_search_dialog(frm) {
         primary_action_label: 'بحث',
         primary_action(values) {
             frappe.call({
-                method: 'lilycenter.lilycenter.doctype.reception_form.reception_form.get_bookings',
+                //return all cooking
+                // method: 'lilycenter.lilycenter.doctype.reception_form.reception_form.get_bookings',
+                // return last five booking
+                method: 'lilycenter.lilycenter.doctype.reception_form.reception_form.get_last_5_bookings',
+
                 args: { customer: values.customer },
                 callback: function(r) {
                     if (r.message) {
@@ -75,48 +79,68 @@ function render_booking_results(dialog, frm, bookings) {
             args: { booking_id: booking_id },
             callback: function(r) {
                 if (r.message) {
-                    // تعبئة نموذج الاستقبال ببيانات الحجز المختار
-                    frm.set_value('customer', r.message.customer);
+                    frappe.call({
+                        method: "lilycenter.lilycenter.doctype.reception_form.reception_form.check_unique_booking",
+                        args: {
+                            booking_id: r.message.booking_id
+                        },
+                        async: false, // Make it synchronous to block further actions
+                        callback: function(response) {
+                            if (response.message === "Booking ID is unique.") {
+                                // If booking ID is unique, continue the submission process
+                                 // تعبئة نموذج الاستقبال ببيانات الحجز المختار
+                                    frm.set_value('customer', r.message.customer);
+                                    frm.set_value('booking_id', r.message.booking_id);
 
-                    frm.clear_table('services');
-                    (r.message.services || []).forEach(service => {
-                        let row = frm.add_child('services');
-                        row.service_name = service.service_name;
-                        row.category = service.category;
-                        row.time = service.time;
-                        row.price = service.price;
-                        row.worker = service.worker;
-                        row.discount = service.discount;
-                        row.discount_rate = service.discount_rate;
-                        row.income_account = service.income_account;
-                        row.discount_account = service.discount_account;
+                                    frm.clear_table('services');
+                                    (r.message.services || []).forEach(service => {
+                                        let row = frm.add_child('services');
+                                        row.service_name = service.service_name;
+                                        row.category = service.category;
+                                        row.time = service.time;
+                                        row.price = service.price;
+                                        row.worker = service.worker;
+                                        row.discount = service.discount;
+                                        row.discount_rate = service.discount_rate;
+                                        row.income_account = service.income_account;
+                                        row.discount_account = service.discount_account;
+                                        row.section_capacity = service.section_capacity;
+                                        row.duration = service.duration;
+                                        // Get section_capacity for each service
+                                        // if (service.category) {
+                                        //     frappe.db.get_value('Item Group', service.category, 'section_capacity', function(result) {
+                                        //         if (result && result.section_capacity) {
+                                        //             frappe.model.set_value(row.doctype, row.name, 'section_capacity', result.section_capacity);
+                                        //         }
+                                        //     });
+                                        // }
+                                    });
+                                    frm.clear_table('booking_payments');
+                                    (r.message.payments || []).forEach(payment => {
+                                        let row = frm.add_child('booking_payments');
+                                        row.mode_of_payment = payment.mode_of_payment;
+                                        row.amount = payment.amount;
+                                        row.reference_no = payment.reference_no;
+                                        row.reference_date = payment.reference_date;
+                                        row.comments = payment.comments;
+                                    });
+                                    
+                                    frm.refresh_fields(['customer', 'services','booking_payments']);
 
-                        // Get section_capacity for each service
-                        // if (service.category) {
-                        //     frappe.db.get_value('Item Group', service.category, 'section_capacity', function(result) {
-                        //         if (result && result.section_capacity) {
-                        //             frappe.model.set_value(row.doctype, row.name, 'section_capacity', result.section_capacity);
-                        //         }
-                        //     });
-                        // }
+                                    // Calculate totals after loading all data
+                                    calculate_total(frm);
+                                    calculate_total_payment(frm);
+
+                                    dialog.hide();  // إخفاء نافذة البحث بعد اختيار الحجز
+                                    calculate_total_booking_payments(frm);
+                            } else {
+                                // If booking ID is not unique, cancel the process and show an error message
+                                frappe.msgprint(__('Booking ID already exists.'));
+                                frappe.validated = false; // This cancels the submission
+                            }
+                        }
                     });
-                    frm.clear_table('payments');
-                    (r.message.payments || []).forEach(payment => {
-                        let row = frm.add_child('payments');
-                        row.mode_of_payment = payment.mode_of_payment;
-                        row.amount = payment.amount;
-                        row.reference_no = payment.reference_no;
-                        row.reference_date = payment.reference_date;
-                        row.comments = payment.comments;
-                    });
-                    
-                    frm.refresh_fields(['customer', 'services','payments']);
-
-                    // Calculate totals after loading all data
-                    calculate_total(frm);
-                    calculate_total_payment(frm);
-
-                    dialog.hide();  // إخفاء نافذة البحث بعد اختيار الحجز
+                   
                 }
             }
         });
@@ -124,71 +148,112 @@ function render_booking_results(dialog, frm, bookings) {
 }
 
 frappe.ui.form.on("Reception Form", {
+    
     refresh(frm) {
-        frm.add_custom_button(__('عرض حجوزات اليوم'), function() {
+// زر عرض الحجوزات بناءً على التاريخ
+frm.add_custom_button(__('عرض الحجوزات حسب التاريخ'), function() {
+    // إنشاء نافذة لإدخال التاريخ
+    frappe.prompt(
+        [
+            {
+                label: 'اختر التاريخ',
+                fieldname: 'booking_date',
+                fieldtype: 'Date',
+                reqd: 1
+            }
+        ],
+        function(values) {
+            // استدعاء الميثود لعرض الحجوزات بناءً على التاريخ المدخل
             frm.call({
-                method: 'lilycenter.lilycenter.doctype.booking.booking.get_today_bookings',
+                method: 'lilycenter.lilycenter.doctype.booking.booking.get_bookings_by_date',
+                args: {
+                    date: values.booking_date
+                },
                 callback: function(r) {
                     if (r.message) {
-                        // تجميع الفئات الفريدة
-                        let categories = [...new Set(r.message.map(b => b.category))];
-                        
-                        // إنشاء جدول HTML
+                        // Extract all categories from the response columns (excluding 'time_range')
+                        let categories = r.message.columns.filter(column => column.fieldname !== 'time_range');
+
+                        // Initialize time slots (00:00 - 23:00)
+                        let timeSlots = [];
+                        for (let i = 0; i < 24; i++) {
+                            let startTime = (i < 10 ? '0' : '') + i + ':00';
+                            let endTime = (i + 1 < 10 ? '0' : '') + (i + 1) + ':00';
+                            timeSlots.push(startTime + ' - ' + endTime);
+                        }
+
+                        // Create HTML for the table
                         let html = '<table class="table table-bordered">';
                         
-                        // إنشاء رأس الجدول
-                        html += '<thead><tr>';
-                        html += '<th>الوقت</th>';
+                        // Create table header (time + categories)
+                        html += '<thead><tr><th>الوقت</th>';
                         categories.forEach(category => {
-                            html += `<th>${category}</th>`;
+                            html += `<th>${category.label}</th>`;
                         });
                         html += '</tr></thead><tbody>';
-                        
-                        // تجميع الحجوزات حسب الوقت
-                        let timeGroups = {};
-                        r.message.forEach(booking => {
-                            if (!timeGroups[booking.service_time]) {
-                                timeGroups[booking.service_time] = {};
-                            }
-                            timeGroups[booking.service_time][booking.category] = {
-                                customer: booking.customer,
-                                worker_name: booking.worker_name
-                            };
-                        });
-                        
-                        // إنشاء صفوف الجدول
-                        Object.keys(timeGroups).sort().forEach(time => {
-                            html += '<tr>';
-                            html += `<td>${time}</td>`;
-                            
+
+                        // Create rows for each time slot
+                        timeSlots.forEach(timeSlot => {
+                            html += `<tr><td>${timeSlot}</td>`;
+
+                            // Initialize a flag for each category
                             categories.forEach(category => {
-                                let booking = timeGroups[time][category];
-                                if (booking) {
-                                    html += `<td>
-                                        العميل: ${booking.customer}<br>
-                                        الموظف: ${booking.worker_name}
-                                    </td>`;
+                                let bookingFound = false;
+                                let bookingDetails = [];
+
+                                // Loop through the bookings for the current time slot and category
+                                r.message.data.forEach(booking => {
+                                    if (booking.time_range === timeSlot && booking.category === category.label) {
+                                        // Collect customer, service, and worker name for display
+                                        bookingDetails.push(`
+                                            العميل: ${booking.customer} <br>
+                                            الخدمة: ${booking.service_name} <br>
+                                            الموظف: ${booking.worker_name}
+                                        `);
+                                        bookingFound = true;
+                                    }
+                                });
+
+                                // If there are bookings, display them in the same cell
+                                if (bookingFound) {
+                                    html += `<td>${bookingDetails.join('<br>')}</td>`;
                                 } else {
-                                    html += '<td></td>';
+                                    // If no booking, display "No booking"
+                                    html += '<td>لايوجد حجز</td>';
                                 }
                             });
-                            
+
                             html += '</tr>';
                         });
-                        
+
                         html += '</tbody></table>';
                         
-                        // عرض النتائج في نافذة حوارية
+                        // Show the generated table in a dialog
                         frappe.msgprint({
-                            title: __('حجوزات اليوم'),
+                            title: __('حجوزات يوم: ') + values.booking_date,
                             message: html,
                             indicator: 'green',
                             wide: true
                         });
+                    } else {
+                        frappe.msgprint({
+                            title: __('لا توجد حجوزات'),
+                            message: __('لا توجد حجوزات في التاريخ المدخل.'),
+                            indicator: 'red'
+                        });
                     }
                 }
             });
-        });
+        },
+        __('اختر التاريخ'),
+        __('عرض')
+    );
+});
+
+
+
+
+
         // إضافة زر للبحث عن الحجوزات
         frm.add_custom_button(__('بحث عن حجز'), function() {
             open_booking_search_dialog(frm);
@@ -290,14 +355,21 @@ frappe.ui.form.on("Reception Form", {
             frm.doc.payments.forEach(payment => {
                 total_payments += payment.amount || 0;
             });
+            let total_booking_payments = 0;
 
-            if (total_payments !== total) {
-                frappe.throw({
-                    title: __('خطأ في الدفع'),
-                    message: __('مجموع الدفعات يجب أن يساوي المبلغ الإجمالي المستحق'),
-                    indicator: 'red'
-                });
-            }
+            frm.doc.booking_payments.forEach(booking_payment => {
+                total_booking_payments += booking_payment.amount || 0;
+            });
+            
+            
+            total_payments = total_payments + total_booking_payments
+            // if (total_payments !== total) {
+            //     frappe.throw({
+            //         title: __('خطأ في الدفع'),
+            //         message: __('مجموع الدفعات يجب أن يساوي المبلغ الإجمالي المستحق'),
+            //         indicator: 'red'
+            //     });
+            // }
         }
     },
     before_save: function(frm) {
@@ -420,12 +492,20 @@ frappe.ui.form.on("Reception Form", {
                 total_payments += row.amount || 0;
             });
             
-            if (total_payments !== total) {
-                frappe.show_alert({
-                    message: __('مجموع الدفعات يجب أن يساوي المبلغ الإجمالي المستحق'),
-                    indicator: 'red'
-                });
-            }
+            let total_booking_payments = 0;
+
+            frm.doc.booking_payments.forEach(booking_payment => {
+                total_booking_payments += booking_payment.amount || 0;
+            });
+            
+            
+            total_payments = total_payments + total_booking_payments
+            // if (total_payments !== total) {
+            //     frappe.show_alert({
+            //         message: __('مجموع الدفعات يجب أن يساوي المبلغ الإجمالي المستحق'),
+            //         indicator: 'red'
+            //     });
+            // }
         } else {
             frm.set_df_property('payments', 'reqd', 0);
         }
@@ -625,10 +705,25 @@ frappe.ui.form.on('Reception Service', {
 
     discount_percentage: function(frm, cdt, cdn) {
         calculate_total(frm);
-    }
+    },
+
+    services_add: function(frm) {
+        calculate_total(frm);
+    },
+    services_remove: function(frm) {
+        calculate_total(frm); // Recalculate the total payment
+    },
 });
 
 frappe.ui.form.on('Reception Payments', {
+    payments_add: function(frm) {
+        console.log("Row added to Reception Payments");
+        calculate_total_payment(frm);
+    },
+    payments_remove: function(frm) {
+        console.log("Row removed from Reception Payments");
+        calculate_total_payment(frm); // Recalculate the total payment
+    },
     mode_of_payment: function(frm, cdt, cdn) {
         let row = locals[cdt][cdn];
         if (!row.mode_of_payment) {
@@ -650,7 +745,11 @@ frappe.ui.form.on('Reception Payments', {
             frappe.throw(__('يجب أن يكون مبلغ الدفع أكبر من صفر'));
         }
         calculate_total_payment(frm);
+    },
+    reception_payments_remove: function(frm) {
+        calculate_total_payment(frm); // Recalculate total payment after row removal
     }
+    
 });
 
 function calculate_total(frm) {
@@ -678,6 +777,16 @@ function calculate_total_payment(frm) {
     }
     frm.set_value('total_payment', total_payment);
     frm.refresh_field('total_payment');
+}
+function calculate_total_booking_payments(frm) {
+    let total_booking_payments = 0;
+    if (frm.doc.booking_payments && frm.doc.booking_payments.length) {
+        frm.doc.booking_payments.forEach(function(row) {
+            total_booking_payments += row.amount || 0;
+        }); 
+    }
+    frm.set_value('total_booking_payments', total_booking_payments);
+    frm.refresh_field('total_booking_payments');
 }
 // function convertToDateTime(time) {
 //     let [hours, minutes] = time.split(":").map(Number);  // تقسيم الوقت إلى ساعات ودقائق

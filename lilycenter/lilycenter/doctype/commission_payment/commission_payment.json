@@ -13,7 +13,8 @@
   "date",
   "\u0627\u0644\u0639\u0645\u0648\u0644\u0629_section",
   "commission_payment_details",
-  "amended_from"
+  "amended_from",
+  "total"
  ],
  "fields": [
   {
@@ -70,11 +71,19 @@
    "fieldname": "section_break_awzl",
    "fieldtype": "Section Break",
    "read_only": 1
+  },
+  {
+   "fieldname": "total",
+   "fieldtype": "Int",
+   "label": "\u0627\u0644\u0645\u062c\u0645\u0648\u0639",
+   "non_negative": 1,
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
+ "is_submittable": 1,
  "links": [],
- "modified": "2024-12-03 05:25:48.188330",
+ "modified": "2024-12-06 22:11:45.426351",
  "modified_by": "Administrator",
  "module": "Lilycenter",
  "name": "Commission Payment",

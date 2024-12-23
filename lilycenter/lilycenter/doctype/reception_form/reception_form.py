@@ -32,19 +32,41 @@ def get_datetime_with_time(time_str):
 class ReceptionForm(Document):
     
     def on_submit(self):
-        # Handle material deduction from inventory
+        # Calculate total from services
+        total = 0
+        for service in self.services:
+            service_discount = service.price * (service.discount_rate / 100) if service.discount_rate else 0
+            amount = service.price - service_discount
+            total += amount
+
+        # Calculate total booking payments
+        total_booking_payment=0
+        
+        total_booking_payment = sum(booking_payment.amount for booking_payment in self.booking_payments)
+        # Calculate total payments
+        total_payments=0
+        total_payments = (sum(payment.amount for payment in self.payments)+total_booking_payment)
+        
+        if total_payments != total:
+            frappe.throw(
+                _("مجموع الدفعات يجب أن يساوي المبلغ الإجمالي المستحق"),
+                title=_("خطأ في الدفع")
+            )        # Handle material deduction from inventory
         self.deduct_materials()
         #Create Sales Invoice based on services
         self.create_sales_invoice()
         
         # Create Process Payments based on services
         self.process_payments()
-
+        
 
 
         # Add Worker Commissions to Commission Payment
         self.process_worker_commission()
 
+        
+            
+            
     def deduct_materials(self):
         if self.materials:
             for material in self.materials:
@@ -275,11 +297,36 @@ def get_bookings(customer=None):
 
     bookings = frappe.get_all("Booking", filters=filters, fields=["name", "customer", "booking_date", "booking_status"])
     return bookings
+@frappe.whitelist()
+def get_last_5_bookings(customer=None):
+    filters = {}
+    if customer:
+        filters["customer"] = ["like", f"%{customer}%"]
+
+    # Fetching the last 5 bookings
+    bookings = frappe.get_all("Booking", filters=filters, fields=["name", "customer", "booking_date", "booking_status"], limit=5, order_by="booking_date desc")
+    
+    return bookings
+@frappe.whitelist()
+def check_unique_booking(booking_id=None):
+    filters = {}
+    if booking_id:
+        filters["booking_id"] = ["like", f"%{booking_id}%"]
+
+    # Fetching data from the "Reception Form" doctype
+    bookings = frappe.get_all("Reception Form", filters=filters)
+    
+    # If any data is returned, raise an error
+    if bookings:
+        frappe.throw(_("تم استقبال هذا الحجز من قبل"))
+    
+    return "Booking ID is unique."
 
 @frappe.whitelist()
 def get_booking_details(booking_id):
     booking = frappe.get_doc("Booking", booking_id)
     return {
+        "booking_id": booking.name,
         "customer": booking.customer,
         "services": booking.services,
         "payments": booking.payments
@@ -325,11 +372,14 @@ def get_booking_details(booking_id):
                 service_discount = service.price * (service.discount_rate / 100) if service.discount_rate else 0
                 amount = service.price - service_discount
                 total += amount
-            
+            # Calculate total booking payments
+            total_booking_payment=0
+            total_booking_payment = sum(total_booking_payments.amount for total_booking_payment in self.total_booking_payments)
             # Calculate total payments
-            total_payments = sum(payment.amount for payment in self.payments)
+            total_payments=0
+            total_payments = (sum(payment.amount for payment in self.payments)+total_booking_payment)
             
-            if total_payments != total:
+            if total_payments :
                 frappe.throw(
                     _("مجموع الدفعات يجب أن يساوي المبلغ الإجمالي المستحق"),
                     title=_("خطأ في الدفع")

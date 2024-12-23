@@ -1,11 +1,11 @@
 // Copyright (c) 2024, hudhifa and contributors
 // For license information, please see license.txt
 
-// frappe.ui.form.on("Commission Payment", {
-// 	refresh(frm) {
-
-// 	},
-// });
+frappe.ui.form.on("Commission Payment", {
+	refresh(frm) {
+        calculate_total(frm)
+	},
+});
 
 frappe.ui.form.on('Commission Payment Details', {
     service_name: function(frm, cdt, cdn) {
@@ -38,4 +38,14 @@ function calculate_commission(cdt,cdn) {
     let row = locals[cdt][cdn];
     let commission =(row.price_of_service* row .commission_rate)/100;
     frappe.model.set_value(cdt,cdn,'worker_salary',commission)
+}
+function calculate_total(frm) {
+    let total= 0;
+    if (frm.doc.commission_payment_details && frm.doc.commission_payment_details.length) {
+        frm.doc.commission_payment_details.forEach(function(row) {
+            total += row.worker_salary || 0;
+        }); 
+    }
+    frm.set_value('total', total);
+    frm.refresh_field('total');
 }

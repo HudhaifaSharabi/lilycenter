@@ -6,9 +6,11 @@ from frappe.model.document import Document
 import frappe
 from frappe import _
 from frappe.utils import nowdate, get_time, getdate, today
-from datetime import date
+from datetime import date, datetime, timedelta
 
 class Booking(Document):
+    def on_submit(self):
+        self.process_payments()
     def validate(self):
         # Validate booking date is not in the past
         if self.booking_date:
@@ -17,7 +19,26 @@ class Booking(Document):
             
             if booking_date < today:
                 frappe.throw(_("لا يمكن حجز موعد في تاريخ سابق لليوم الحالي"))  # رسالة خطأ بالعربي
-        
+    
+
+    def process_payments(self):
+        if self.payments:
+            for row in self.payments:
+                payment_entry = frappe.get_doc({
+                    'doctype': 'Payment Entry',
+                    'payment_type': 'Receive',
+                    'mode_of_payment': row.mode_of_payment,
+                    'party_type': 'Customer',
+                    'party': self.customer,
+                    'paid_amount': row.amount,
+                    'received_amount': row.amount,
+                    'paid_to': get_default_paid_to_account(row.mode_of_payment),
+                })
+                payment_entry.insert()
+                payment_entry.submit()
+        else:
+            frappe.throw('يرجى تحديد المدفوعات قبل تقديم الطلب.')
+
 @frappe.whitelist()
 def check_slot_availability(category=None, time=None, duration=None, booking_date=None):
     """التحقق من توفر الموعد"""
@@ -112,24 +133,75 @@ def check_slot_availability(category=None, time=None, duration=None, booking_dat
             "available": False,
             "error": str(e)
         }
-
 @frappe.whitelist()
-def get_today_bookings():
-    today = frappe.utils.nowdate()
-    
-    # الحصول على جميع الخدمات المحجوزة اليوم مع تفاصيلها وأسماء الموظفين
+def get_bookings_by_date(date=None):
+    if not date:
+        date = frappe.utils.nowdate()  # Default to today's date if not provided
+
+    # Fetch bookings from the database
     bookings = frappe.db.sql("""
         SELECT 
-            rs.time as service_time,
-            rs.category,
+            rs.time AS service_time,
+            i.item_group AS category,
             b.customer,
-            (SELECT employee_name FROM `tabEmployee` WHERE name = rs.worker) as worker_name,
-            b.booking_status
+            (SELECT employee_name FROM `tabEmployee` WHERE name = rs.worker) AS worker_name,
+            rs.service_name
         FROM `tabBooking` b
         JOIN `tabReception Service` rs ON rs.parent = b.name
-        WHERE b.booking_date = %s
+        JOIN `tabItem` i ON i.name = rs.service_name
+        WHERE b.booking_date = %(date)s
         AND b.booking_status != 'ملغي'
         ORDER BY rs.time ASC
-    """, today, as_dict=1)
-    
-    return bookings
+    """, {"date": date}, as_dict=True)
+
+    # Fetch all categories in the "Beauty" group (whether or not they have bookings)
+    categories = frappe.db.sql("""
+        SELECT name, item_group 
+        FROM `tabItem`
+        WHERE item_group = 'Beauty'
+    """, as_dict=True)
+
+    # Generate time slots (00:00 - 23:00)
+    time_slots = {}
+    start_of_day = datetime.strptime('00:00', '%H:%M')
+    end_of_day = datetime.strptime('23:00', '%H:%M')
+    current_time = start_of_day
+    while current_time <= end_of_day:
+        time_range = f"{current_time.strftime('%H:%M')} - {(current_time + timedelta(hours=1)).strftime('%H:%M')}"
+        time_slots[time_range] = []  # Initialize an empty list for each time range
+        current_time += timedelta(hours=1)
+
+    # Organize bookings by time slot
+    for booking in bookings:
+        service_time = booking["service_time"]
+        if isinstance(service_time, timedelta):
+            service_time = (datetime.min + service_time).time()
+
+        start_of_hour = datetime.combine(datetime.min, service_time).replace(minute=0, second=0, microsecond=0)
+        end_time = start_of_hour + timedelta(hours=1)
+        time_range = f"{start_of_hour.strftime('%H:%M')} - {end_time.strftime('%H:%M')}"
+
+        time_slots[time_range].append({
+            "category": booking["category"],
+            "customer": booking["customer"],
+            "worker_name": booking["worker_name"],
+            "service_name": booking["service_name"]
+        })
+
+    # Return all the necessary columns and data
+    return {
+        "columns": [{"label": "الوقت", "fieldname": "time_range", "fieldtype": "Data", "width": 150}] +
+                   [{"label": category["name"], "fieldname": category["name"], "fieldtype": "Data", "width": 150} for category in categories],
+        "data": [ {
+            "time_range": time_range,
+            "category": booking["category"],
+            "customer": booking["customer"],
+            "worker_name": booking["worker_name"],
+            "service_name": booking["service_name"]
+        } for time_range, bookings in time_slots.items() for booking in bookings]
+    }
+def get_default_paid_to_account(mode_of_payment):
+    account = frappe.db.get_value('Mode of Payment Account', 
+                                  {'parent': mode_of_payment, 'company': frappe.defaults.get_user_default('company')}, 
+                                  'default_account')
+    return account or "Default Paid To Account"
