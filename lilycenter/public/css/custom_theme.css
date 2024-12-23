@@ -196,3 +196,17 @@ div.small.form-clickable-section.grid-footer {
 .datepicker {
     background-color: var(--primary-color);
 }
+
+.list-row-head {
+    background-color: var(--tertiary-color);
+}
+
+.awesomplete ul p {
+    color: var(--black-color);
+}
+
+.datatable .dt-cell,
+.dropdown-item,
+div.alert-message {
+    color: var(--black-color) !important;
+}

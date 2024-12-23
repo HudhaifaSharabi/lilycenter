@@ -4,7 +4,7 @@ app_publisher = "hudhifa"
 app_description = "for Beauty and spa"
 app_email = "alsharabihudhaif@gmail.com"
 app_license = "mit"
-app_include_css = "/assets/lilycenter/css/custom_theme.css"
+# app_include_css = "/assets/lilycenter/css/custom_theme.css"
 
 # required_apps = []
 

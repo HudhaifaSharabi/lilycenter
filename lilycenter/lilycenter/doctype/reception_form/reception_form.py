@@ -1,8 +1,36 @@
 import frappe
-from frappe.utils import nowdate
+from frappe import _
+from frappe.utils import get_datetime, nowdate
 from frappe.model.document import Document
+from datetime import datetime, timedelta
+
+def get_datetime_with_time(time_str):
+    """
+    تحويل الوقت إلى كائن datetime مع تاريخ اليوم
+    
+    Args:
+        time_str (str): الوقت (مثال: '14:30:00')
+        
+    Returns:
+        datetime: كائن datetime يجمع بين تاريخ اليوم والوقت
+    """
+    try:
+        if isinstance(time_str, str):
+            today = nowdate()
+            # التعامل مع تنسيقات الوقت المختلفة
+            try:
+                time_obj = datetime.strptime(time_str, '%H:%M:%S').time()
+            except ValueError:
+                time_obj = datetime.strptime(time_str, '%H:%M').time()
+            
+            return datetime.combine(datetime.strptime(today, '%Y-%m-%d').date(), time_obj)
+        return None
+    except Exception as e:
+        frappe.log_error(f"Error in get_datetime_with_time: {str(e)}")
+        return None
 
 class ReceptionForm(Document):
+    
     def on_submit(self):
         # Handle material deduction from inventory
         self.deduct_materials()
@@ -256,3 +284,294 @@ def get_booking_details(booking_id):
         "services": booking.services,
         "payments": booking.payments
     }
+
+    def validate_time_conflict(self):
+        for current_service in self.services:
+            current_start_time = get_datetime_with_time(current_service.time)
+            current_end_time = current_start_time + timedelta(minutes=current_service.duration)
+
+            for other_service in self.services:
+                if other_service.name != current_service.name:  # تجنب مقارنة الخمة مع نفسها
+                    other_start_time = get_datetime_with_time(other_service.time)
+                    other_end_time = other_start_time + timedelta(minutes=other_service.duration)
+
+                    # التحقق من تداخل الأوقات بدون النظر إلى الفئة
+                    if (current_start_time < other_end_time and current_end_time > other_start_time):
+                        frappe.throw(
+                            _("Time conflict detected. Client cannot receive two services at the same time.")
+                        )
+
+    def validate(self):
+        self.validate_time_conflict()
+        
+        self._validate_customer()
+        self._validate_status()
+        self._validate_services()
+        self._validate_total()
+        self._validate_payments()
+        self._validate_materials()
+        self._validate_worker_commission()
+
+    def _validate_customer(self):
+        """Validate customer field"""
+        if not self.customer:
+            frappe.throw(_("يجب اختيار العميل"))
+        
+        # Validate customer exists
+        if not frappe.db.exists("Customer", self.customer):
+            frappe.throw(_("العميل غير موجود في النظام"))
+
+    def _validate_status(self):
+        """Validate status field"""
+        if not self.statues:
+            frappe.throw(_("يجب تحديد حالة الطلب"))
+        
+        if self.statues not in ["مؤكد", "غير مؤكد"]:
+            frappe.throw(_("حالة الطلب غير صحيحة"))
+
+    def _validate_services(self):
+        """Validate services table"""
+        if not self.services:
+            frappe.throw(_("يجب إضافة خدمة واحدة على الأقل"))
+
+        for service in self.services:
+            # Required fields validation
+            if not service.service_name:
+                frappe.throw(_("يجب تحديد اسم الخدمة لجميع الخدمات"))
+            
+            if not service.worker:
+                frappe.throw(_("يجب تحديد الموظف لجميع الخدمات"))
+            
+            if not service.time:
+                frappe.throw(_("يجب تحديد وقت لجميع الخدمات"))
+            
+            if not service.price or service.price <= 0:
+                frappe.throw(_("يجب أن يكون سعر الخدمة أكبر من صفر"))
+
+            # Validate service exists
+            if not frappe.db.exists("Item", service.service_name):
+                frappe.throw(_("الخدمة {0} غير موجودة في النظام").format(service.service_name))
+
+            # Validate worker exists
+            if not frappe.db.exists("Employee", service.worker):
+                frappe.throw(_("الموظف {0} غير موجود في النظام").format(service.worker))
+
+            # Validate time format
+            try:
+                time_obj = get_datetime_with_time(service.time)
+                if not time_obj:
+                    frappe.throw(_("صيغة الوقت غير صحيحة للخدمة {0}").format(service.service_name))
+            except Exception:
+                frappe.throw(_("صيغة الوقت غير صحيحة للخدمة {0}").format(service.service_name))
+
+    def _validate_total(self):
+        """Validate total amount"""
+        calculated_total = sum(service.price for service in self.services)
+        if float(self.total) != calculated_total:
+            frappe.throw(_("مجموع الخدمات يجب أن يساوي المبلغ الإجمالي المستحق"))
+
+    def _validate_payments(self):
+        """Validate payments table"""
+        if self.statues == "مؤكد":
+            if not self.payments or not self.payments.length:
+                frappe.throw(_("يجب إضافة طريقة دفع واحدة على الأقل للحالة المؤكدة"))
+
+            total_payments = 0
+            for payment in self.payments:
+                if not payment.mode_of_payment:
+                    frappe.throw(_("يجب تحديد طريقة الدفع لكل سطر في المدفوعات"))
+
+                if not payment.amount or payment.amount <= 0:
+                    frappe.throw(_("يجب أن يكون مبلغ الدفع أكبر من صفر"))
+
+                total_payments += payment.amount
+
+            if total_payments != float(self.total):
+                frappe.throw(_("مجموع المدفوعات يجب أن يساوي المبلغ الإجمالي المستحق"))
+
+    def _validate_materials(self):
+        """Validate materials table"""
+        if not self.materials or not self.materials.length:
+            frappe.throw(_("يجب إضافة مادة واحدة على الأقل في جدول المواد"))
+
+        for material in self.materials:
+            if not material.item_code:
+                frappe.throw(_("يجب تحديد رمز المادة لكل سطر في جدول المواد"))
+
+            if not material.quantity or material.quantity <= 0:
+                frappe.throw(_("يجب أن يكون مبلغ المادة أكبر من صفر"))
+
+    def _validate_worker_commission(self):
+        """Validate worker commission table"""
+        if not self.worker_commission or not self.worker_commission.length:
+            frappe.throw(_("يجب إضافة عمولة واحدة على الأقل في جدول العمولة"))
+
+        for worker_commission in self.worker_commission:
+            if not worker_commission.worker:
+                frappe.throw(_("يجب تحديد الموظف لكل سطر في جدول العمولة"))
+
+            if not worker_commission.service_name:
+                frappe.throw(_("يجب تحديد اسم الخدمة لكل سطر في جدول العمولة"))
+
+            if not worker_commission.commission_rate or worker_commission.commission_rate <= 0:
+                frappe.throw(_("يجب أن يكون معدل العمولة أكبر من صفر"))
+
+            if not worker_commission.price_of_service or worker_commission.price_of_service <= 0:
+                frappe.throw(_("يجب أن يكون سعر الخدمة أكبر من صفر"))
+
+            if not worker_commission.worker_salary or worker_commission.worker_salary <= 0:
+                frappe.throw(_("يجب أن يكون مبلغ الموظف أكبر من صفر"))
+
+            if not worker_commission.commission_account:
+                frappe.throw(_("يجب تحديد حساب العمولة لكل سطر في جدول العمولة"))
+
+            if not worker_commission.employee_account:
+                frappe.throw(_("يجب تحديد حساب الموظف لكل سطر في جدول العمولة"))
+
+    def check_availability(self, category, start_time, duration, current_row_name=None):
+        end_time = start_time + timedelta(minutes=duration)
+        
+        section_capacity = frappe.get_value('Item Group', category, 'section_capacity') or 1
+        
+        overlapping_services = frappe.db.sql("""
+            SELECT rs.name
+            FROM `tabReception Service` rs
+            JOIN `tabReception Form` rf ON rs.parent = rf.name
+            WHERE rf.docstatus < 2
+                AND rs.category = %s
+                AND rs.name != %s
+                AND rf.date = %s
+                AND (
+                    (TIME(%s) < ADDTIME(rs.time, SEC_TO_TIME(rs.duration * 60))
+                    AND ADDTIME(TIME(%s), SEC_TO_TIME(%s * 60)) > rs.time)
+                )
+        """, (category, current_row_name or '', nowdate(), start_time.time(), 
+              start_time.time(), duration), as_dict=1)
+        
+        return len(overlapping_services) < section_capacity
+
+@frappe.whitelist()
+def check_slot_availability(category=None, time=None, duration=None):
+    """التحقق من توفر الموعد"""
+    try:
+        # التحقق من وجود جميع البيانات المطلوبة
+        if not all([category, time, duration]):
+            return {
+                "available": False,
+                "error": "بيانات غير مكتملة"
+            }
+
+        # تحويل المدة إلى دقائق
+        try:
+            if isinstance(duration, str) and ':' in duration:
+                hours, minutes = duration.split(':')[:2]
+                duration_minutes = (int(hours) * 60) + int(minutes)
+            else:
+                duration_minutes = int(float(duration))
+        except:
+            duration_minutes = 60  # القيمة الافتراضية
+
+        # البحث عن الخدمات المتداخلة
+        overlapping_services = frappe.db.sql("""
+            SELECT 
+                rs.time as service_time,
+                CASE 
+                    WHEN rs.duration REGEXP '^[0-9]+:[0-9]+' THEN 
+                        (
+                            CAST(SUBSTRING_INDEX(rs.duration, ':', 1) AS UNSIGNED) * 60 +
+                            CAST(SUBSTRING_INDEX(rs.duration, ':', -1) AS UNSIGNED)
+                        )
+                    ELSE CAST(rs.duration AS DECIMAL(10,2))
+                END as duration_minutes
+            FROM `tabReception Service` rs
+            JOIN `tabReception Form` rf ON rs.parent = rf.name
+            WHERE rf.docstatus < 2
+                AND rs.category = %(category)s
+                AND DATE(rf.creation) = %(today)s
+        """, {
+            'category': category,
+            'today': nowdate()
+        }, as_dict=1)
+
+        # حساب التداخل
+        current_overlapping = 0
+        time_parts = time.split(':')
+        requested_minutes = int(time_parts[0]) * 60 + int(time_parts[1])
+        requested_end_minutes = requested_minutes + duration_minutes
+
+        for service in overlapping_services:
+            service_time_parts = str(service.service_time).split(':')
+            service_minutes = int(service_time_parts[0]) * 60 + int(service_time_parts[1])
+            service_end_minutes = service_minutes + int(service.duration_minutes)
+
+            # التحقق من التداخل
+            if not (requested_end_minutes <= service_minutes or 
+                   requested_minutes >= service_end_minutes):
+                current_overlapping += 1
+
+        # الحصول على سعة القسم
+        section_capacity = frappe.get_value('Item Group', category, 'section_capacity') or 1
+
+        # تحضير معلومات التشخيص
+        debug_info = {
+            "category": category,
+            "time": time,
+            "duration": duration_minutes,
+            "section_capacity": section_capacity,
+            "overlapping_count": current_overlapping,
+            "existing_services": [
+                {
+                    "time": str(s.service_time),
+                    "duration": int(s.duration_minutes)
+                } for s in overlapping_services
+            ]
+        }
+
+        # تسجيل المعلومات في ملف السجل بدون عنوان طويل
+        frappe.logger().debug(f"Availability Check: {debug_info}")
+
+        is_available = current_overlapping < section_capacity
+
+        return {
+            "available": is_available,
+            "debug_info": debug_info
+        }
+
+    except Exception as e:
+        frappe.logger().error(f"Slot Check Error: {str(e)}")
+        return {
+            "available": False,
+            "error": str(e)
+        }
+
+    def before_submit(self):
+        if self.statues != "مؤكد":
+            frappe.throw(
+                _("يجب عليك تأكيد الحجز قبل الإرسال"),
+                title=_("تنبيه")
+            )
+        
+        if self.statues == "مؤكد":
+            if not self.payments:
+                frappe.throw(
+                    _("يجب إضاف طريقة دفع واحدة على الأقل عند تأكيد الحجز"),
+                    title=_("خطأ في الدفع")
+                )
+            
+            total_payments = sum(payment.amount for payment in self.payments)
+            if total_payments != self.total:
+                frappe.throw(
+                    _("مجموع الدفعات يجب أن يساوي المبلغ الإجمالي المستحق"),
+                    title=_("خطأ في الدفع")
+                )
+
+    def get_indicator(self):
+        """Return indicator color for the document"""
+        if self.statues != "مؤكد":
+            return [_("غير مؤكد"), "red", "statues,!=,مؤكد"]
+        return [_("مؤكد"), "green", "statues,=,مؤكد"]
+
+    def get_list_settings(self):
+        return {
+            'order_by': 'CASE WHEN statues != "مؤكد" THEN 0 ELSE 1 END, modified DESC'
+        }
