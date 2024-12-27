@@ -6,22 +6,33 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "naming_series",
+  "section_break_awzl",
   "worker",
+  "naming_series",
+  "column_break_mxle",
   "date",
-  "commission_payment_details"
+  "\u0627\u0644\u0639\u0645\u0648\u0644\u0629_section",
+  "commission_payment_details",
+  "amended_from",
+  "total"
  ],
  "fields": [
   {
    "fieldname": "worker",
    "fieldtype": "Link",
-   "label": "Worker",
-   "options": "Employee"
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "\u0627\u0644\u0645\u0648\u0638\u0641",
+   "options": "Employee",
+   "reqd": 1
   },
   {
    "fieldname": "date",
    "fieldtype": "Date",
-   "label": "Date"
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "\u0627\u0644\u062a\u0627\u0631\u064a\u062e",
+   "reqd": 1
   },
   {
    "fieldname": "naming_series",
@@ -33,13 +44,46 @@
   {
    "fieldname": "commission_payment_details",
    "fieldtype": "Table",
-   "label": "Commission Payment Details",
-   "options": "Commission Payment Details"
+   "label": "\u062a\u0641\u0627\u0635\u064a\u0644 \u0627\u0644\u0639\u0645\u0648\u0644\u0629",
+   "options": "Commission Payment Details",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_mxle",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "\u0627\u0644\u0639\u0645\u0648\u0644\u0629_section",
+   "fieldtype": "Section Break",
+   "label": "\u0627\u0644\u0639\u0645\u0648\u0644\u0629"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Commission Payment",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "section_break_awzl",
+   "fieldtype": "Section Break",
+   "read_only": 1
+  },
+  {
+   "fieldname": "total",
+   "fieldtype": "Int",
+   "label": "\u0627\u0644\u0645\u062c\u0645\u0648\u0639",
+   "non_negative": 1,
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
+ "is_submittable": 1,
  "links": [],
- "modified": "2024-09-23 17:19:25.672316",
+ "modified": "2024-12-06 22:11:45.426351",
  "modified_by": "Administrator",
  "module": "Lilycenter",
  "name": "Commission Payment",
@@ -57,9 +101,20 @@
    "role": "System Manager",
    "share": 1,
    "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "reception",
+   "select": 1,
+   "share": 1
   }
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
- "states": []
+ "states": [],
+ "track_changes": 1
 }

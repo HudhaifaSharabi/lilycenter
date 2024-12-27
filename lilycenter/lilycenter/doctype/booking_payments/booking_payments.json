@@ -1,7 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
- "creation": "2024-09-14 00:16:50.734468",
+ "creation": "2024-12-23 03:38:26.771730",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
@@ -37,7 +37,7 @@
   },
   {
    "fieldname": "reference_date",
-   "fieldtype": "Date",
+   "fieldtype": "Data",
    "in_list_view": 1,
    "label": "\u062a\u0627\u0631\u064a\u062e \u0627\u0644\u0645\u0631\u062c\u0639"
   },
@@ -50,10 +50,10 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2024-12-23 03:41:53.168424",
+ "modified": "2024-12-23 03:42:28.244123",
  "modified_by": "Administrator",
  "module": "Lilycenter",
- "name": "Reception Payments",
+ "name": "Booking Payments",
  "owner": "Administrator",
  "permissions": [],
  "sort_field": "modified",

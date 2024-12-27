@@ -8,5 +8,9 @@ frappe.ui.form.on('Commission Details', {
             // Set the current date and time as the default value for effective_date
             frappe.model.set_value(cdt, cdn, 'effective_date', frappe.datetime.now_datetime());
         }
+        if (!row.commission_rate || row.commission_rate > 100 || row.commission_rate <= 0  ) {
+            frappe.model.set_value(cdt,cdn,'commission_rate',null)
+            frappe.throw(__('يجب أن يكون نسبة العمولة أقل من 100 وأكبر من 0' ));
+        }
     }
 });

@@ -11,7 +11,6 @@
   "category",
   "column_break_uxqq",
   "price",
-  "duration",
   "naming_series",
   "section_break_tuqk",
   "table_material",
@@ -58,6 +57,7 @@
    "reqd": 1
   },
   {
+   "fetch_from": "service_name.standard_rate",
    "fieldname": "price",
    "fieldtype": "Currency",
    "in_list_view": 1,
@@ -107,25 +107,52 @@
    "fieldname": "\u0627\u0644\u062e\u062f\u0645\u0629_section",
    "fieldtype": "Section Break",
    "label": "\u0627\u0644\u062e\u062f\u0645\u0629"
-  },
-  {
-   "default": "01:00:00",
-   "description": "\u0627\u0644\u0648\u0642\u062a \u0627\u0644\u0645\u0637\u0644\u0648\u0628 \u0644\u0643\u0644 \u062e\u062f\u0645\u0647",
-   "fieldname": "duration",
-   "fieldtype": "Time",
-   "label": "\u0648\u0642\u062a \u0627\u0644\u062e\u062f\u0645\u0629",
-   "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-11-08 00:05:50.075275",
+ "modified": "2024-12-03 05:31:46.990076",
  "modified_by": "Administrator",
  "module": "Lilycenter",
  "name": "Service",
  "naming_rule": "By fieldname",
  "owner": "Administrator",
- "permissions": [],
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Administrator",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Accounts Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "reception",
+   "select": 1,
+   "share": 1
+  }
+ ],
  "search_fields": "category",
  "show_title_field_in_link": 1,
  "sort_field": "modified",

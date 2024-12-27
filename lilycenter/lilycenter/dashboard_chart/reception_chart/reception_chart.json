@@ -10,11 +10,11 @@
  "dynamic_filters_json": "[]",
  "filters_json": "[]",
  "group_by_type": "Count",
- "idx": 0,
+ "idx": 23,
  "is_public": 0,
  "is_standard": 1,
- "last_synced_on": "2024-11-08 01:54:31.668684",
- "modified": "2024-11-08 01:56:04.800359",
+ "last_synced_on": "2024-11-21 22:25:43.343278",
+ "modified": "2024-11-21 22:25:54.212275",
  "modified_by": "Administrator",
  "module": "Lilycenter",
  "name": "Reception Chart",
@@ -24,6 +24,9 @@
  "roles": [
   {
    "role": "Administrator"
+  },
+  {
+   "role": "System Manager"
   }
  ],
  "source": "",

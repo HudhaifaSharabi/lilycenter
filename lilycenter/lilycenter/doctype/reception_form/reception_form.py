@@ -32,19 +32,41 @@ def get_datetime_with_time(time_str):
 class ReceptionForm(Document):
     
     def on_submit(self):
-        # Handle material deduction from inventory
+        # Calculate total from services
+        total = 0
+        for service in self.services:
+            service_discount = service.price * (service.discount_rate / 100) if service.discount_rate else 0
+            amount = service.price - service_discount
+            total += amount
+
+        # Calculate total booking payments
+        total_booking_payment=0
+        
+        total_booking_payment = sum(booking_payment.amount for booking_payment in self.booking_payments)
+        # Calculate total payments
+        total_payments=0
+        total_payments = (sum(payment.amount for payment in self.payments)+total_booking_payment)
+        
+        if total_payments != total:
+            frappe.throw(
+                _("مجموع الدفعات يجب أن يساوي المبلغ الإجمالي المستحق"),
+                title=_("خطأ في الدفع")
+            )        # Handle material deduction from inventory
         self.deduct_materials()
         #Create Sales Invoice based on services
         self.create_sales_invoice()
         
         # Create Process Payments based on services
         self.process_payments()
-
+        
 
 
         # Add Worker Commissions to Commission Payment
         self.process_worker_commission()
 
+        
+            
+            
     def deduct_materials(self):
         if self.materials:
             for material in self.materials:
@@ -275,34 +297,59 @@ def get_bookings(customer=None):
 
     bookings = frappe.get_all("Booking", filters=filters, fields=["name", "customer", "booking_date", "booking_status"])
     return bookings
+@frappe.whitelist()
+def get_last_5_bookings(customer=None):
+    filters = {}
+    if customer:
+        filters["customer"] = ["like", f"%{customer}%"]
+
+    # Fetching the last 5 bookings
+    bookings = frappe.get_all("Booking", filters=filters, fields=["name", "customer", "booking_date", "booking_status"], limit=5, order_by="booking_date desc")
+    
+    return bookings
+@frappe.whitelist()
+def check_unique_booking(booking_id=None):
+    filters = {}
+    if booking_id:
+        filters["booking_id"] = ["like", f"%{booking_id}%"]
+
+    # Fetching data from the "Reception Form" doctype
+    bookings = frappe.get_all("Reception Form", filters=filters)
+    
+    # If any data is returned, raise an error
+    if bookings:
+        frappe.throw(_("تم استقبال هذا الحجز من قبل"))
+    
+    return "Booking ID is unique."
 
 @frappe.whitelist()
 def get_booking_details(booking_id):
     booking = frappe.get_doc("Booking", booking_id)
     return {
+        "booking_id": booking.name,
         "customer": booking.customer,
         "services": booking.services,
         "payments": booking.payments
     }
 
-    def validate_time_conflict(self):
-        for current_service in self.services:
-            current_start_time = get_datetime_with_time(current_service.time)
-            current_end_time = current_start_time + timedelta(minutes=current_service.duration)
+    # def validate_time_conflict(self):
+    #     for current_service in self.services:
+    #         current_start_time = get_datetime_with_time(current_service.time)
+    #         current_end_time = current_start_time + timedelta(minutes=current_service.duration)
 
-            for other_service in self.services:
-                if other_service.name != current_service.name:  # تجنب مقارنة الخمة مع نفسها
-                    other_start_time = get_datetime_with_time(other_service.time)
-                    other_end_time = other_start_time + timedelta(minutes=other_service.duration)
+    #         for other_service in self.services:
+    #             if other_service.name != current_service.name:  # تجنب مقارنة الخمة مع نفسها
+    #                 other_start_time = get_datetime_with_time(other_service.time)
+    #                 other_end_time = other_start_time + timedelta(minutes=other_service.duration)
 
-                    # التحقق من تداخل الأوقات بدون النظر إلى الفئة
-                    if (current_start_time < other_end_time and current_end_time > other_start_time):
-                        frappe.throw(
-                            _("Time conflict detected. Client cannot receive two services at the same time.")
-                        )
+    #                 # التحقق من تداخل الأوقات بدون النظر إلى الفئة
+    #                 if (current_start_time < other_end_time and current_end_time > other_start_time):
+    #                     frappe.throw(
+    #                         _("Time conflict detected. Client cannot receive two services at the same time.")
+    #                     )
 
     def validate(self):
-        self.validate_time_conflict()
+        # self.validate_time_conflict()
         
         self._validate_customer()
         self._validate_status()
@@ -311,6 +358,32 @@ def get_booking_details(booking_id):
         self._validate_payments()
         self._validate_materials()
         self._validate_worker_commission()
+
+        if self.statues == "مؤكد":
+            if not self.payments:
+                frappe.throw(
+                    _("يجب إضاف طريقة دفع واحدة على الأقل عند تأكيد الحجز"),
+                    title=_("خطأ في الدفع")
+                )
+            
+            # Calculate total from services
+            total = 0
+            for service in self.services:
+                service_discount = service.price * (service.discount_rate / 100) if service.discount_rate else 0
+                amount = service.price - service_discount
+                total += amount
+            # Calculate total booking payments
+            total_booking_payment=0
+            total_booking_payment = sum(total_booking_payments.amount for total_booking_payment in self.total_booking_payments)
+            # Calculate total payments
+            total_payments=0
+            total_payments = (sum(payment.amount for payment in self.payments)+total_booking_payment)
+            
+            if total_payments :
+                frappe.throw(
+                    _("مجموع الدفعات يجب أن يساوي المبلغ الإجمالي المستحق"),
+                    title=_("خطأ في الدفع")
+                )
 
     def _validate_customer(self):
         """Validate customer field"""
@@ -451,17 +524,9 @@ def get_booking_details(booking_id):
         return len(overlapping_services) < section_capacity
 
 @frappe.whitelist()
-def check_slot_availability(category=None, time=None, duration=None):
-    """التحقق من توفر الموعد"""
+def check_slot_availability(service_name=None, worker=None, time=None, duration=None, date=None):
+    """التحقق من توفر الموعد مع القدرة الاستيعابية وإظهار اسم العميل والتاريخ ورقم الهاتف في رسالة الخطأ"""
     try:
-        # التحقق من وجود جميع البيانات المطلوبة
-        if not all([category, time, duration]):
-            return {
-                "available": False,
-                "error": "بيانات غير مكتملة"
-            }
-
-        # تحويل المدة إلى دقائق
         try:
             if isinstance(duration, str) and ':' in duration:
                 hours, minutes = duration.split(':')[:2]
@@ -469,12 +534,55 @@ def check_slot_availability(category=None, time=None, duration=None):
             else:
                 duration_minutes = int(float(duration))
         except:
-            duration_minutes = 60  # القيمة الافتراضية
+            duration_minutes = 60
+        # تحقق من البيانات المطلوبة
+        if not all([service_name, worker, time, duration, date]):
+            return {
+                "available": False,
+                "error": "بيانات غير مكتملة"
+            }
 
-        # البحث عن الخدمات المتداخلة
+        # تحويل الوقت إلى دقائق
+        time_parts = time.split(':')
+        requested_start = int(time_parts[0]) * 60 + int(time_parts[1])
+        requested_end = requested_start + duration_minutes
+
+        # استعلام للحصول على الحجوزات المتداخلة من جدول "الحجز"
+        overlapping_bookings = frappe.db.sql("""
+            SELECT 
+                rs.service_name, 
+                rs.worker,
+                rs.time as service_time,
+                b.customer,
+                b.mobile_no,
+                b.booking_date,
+                CASE 
+                    WHEN rs.duration REGEXP '^[0-9]+:[0-9]+' THEN 
+                        (
+                            CAST(SUBSTRING_INDEX(rs.duration, ':', 1) AS UNSIGNED) * 60 +
+                            CAST(SUBSTRING_INDEX(rs.duration, ':', -1) AS UNSIGNED)
+                        )
+                    ELSE CAST(rs.duration AS DECIMAL(10,2))
+                END as duration_minutes
+            FROM `tabReception Service` rs
+            JOIN `tabBooking` b ON rs.parent = b.name
+            WHERE b.docstatus < 2
+                AND rs.worker = %(worker)s
+                AND DATE(b.booking_date ) = %(date)s
+                AND b.booking_status != 'ملغي'
+        """, {
+            'worker': worker,
+            'date': date
+        }, as_dict=True)
+
+        # استعلام للحصول على الحجوزات المتداخلة من جدول "الاستقبال"
         overlapping_services = frappe.db.sql("""
             SELECT 
+                rs.service_name, 
+                rs.worker,
                 rs.time as service_time,
+
+                rf.date as reception_date,
                 CASE 
                     WHEN rs.duration REGEXP '^[0-9]+:[0-9]+' THEN 
                         (
@@ -486,55 +594,62 @@ def check_slot_availability(category=None, time=None, duration=None):
             FROM `tabReception Service` rs
             JOIN `tabReception Form` rf ON rs.parent = rf.name
             WHERE rf.docstatus < 2
-                AND rs.category = %(category)s
-                AND DATE(rf.creation) = %(today)s
+                AND rs.worker = %(worker)s
+                AND DATE(rf.date ) = %(date)s
         """, {
-            'category': category,
-            'today': nowdate()
-        }, as_dict=1)
+            'worker': worker,
+            'date': date
+        }, as_dict=True)
 
-        # حساب التداخل
+        # حساب التداخل والقدرة الاستيعابية
         current_overlapping = 0
-        time_parts = time.split(':')
-        requested_minutes = int(time_parts[0]) * 60 + int(time_parts[1])
-        requested_end_minutes = requested_minutes + duration_minutes
+        overlapping_info = []
 
-        for service in overlapping_services:
-            service_time_parts = str(service.service_time).split(':')
-            service_minutes = int(service_time_parts[0]) * 60 + int(service_time_parts[1])
-            service_end_minutes = service_minutes + int(service.duration_minutes)
+        # التحقق من التداخل في الحجوزات المتداخلة
+        for booking in overlapping_bookings:
+            service_time_parts = str(booking.service_time).split(':')
+            service_start = int(service_time_parts[0]) * 60 + int(service_time_parts[1])
+            service_end = service_start + int(booking.duration_minutes)
 
             # التحقق من التداخل
-            if not (requested_end_minutes <= service_minutes or 
-                   requested_minutes >= service_end_minutes):
-                current_overlapping += 1
+            if not (requested_end <= service_start or requested_start >= service_end):
+                if booking.service_name == service_name:
+                    current_overlapping += 1
+                else:
+                    # رفض الحجز إذا كانت الخدمة مختلفة
+                    return {
+                        "available": False,
+                        "error": f"هناك حجز متداخل لخدمة مختلفة في هذا الوقت. العميل: {booking.customer}, التاريخ: {booking.booking_date}"
+                    }
 
-        # الحصول على سعة القسم
-        section_capacity = frappe.get_value('Item Group', category, 'section_capacity') or 1
+        # التحقق من التداخل في الاستقبال المتداخل
+        for service in overlapping_services:
+            service_time_parts = str(service.service_time).split(':')
+            service_start = int(service_time_parts[0]) * 60 + int(service_time_parts[1])
+            service_end = service_start + int(service.duration_minutes)
 
-        # تحضير معلومات التشخيص
-        debug_info = {
-            "category": category,
-            "time": time,
-            "duration": duration_minutes,
-            "section_capacity": section_capacity,
-            "overlapping_count": current_overlapping,
-            "existing_services": [
-                {
-                    "time": str(s.service_time),
-                    "duration": int(s.duration_minutes)
-                } for s in overlapping_services
-            ]
-        }
+            # التحقق من التداخل
+            if not (requested_end <= service_start or requested_start >= service_end):
+                if service.service_name == service_name:
+                    current_overlapping += 1
+                else:
+                    # رفض الحجز إذا كانت الخدمة مختلفة
+                    return {
+                        "available": False,
+                        "error": f"هناك استقبال متداخل لخدمة مختلفة في هذا الوقت. العميل: {service.customer}, الهاتف: {service.customer}, التاريخ: {service.reception_date}"
+                    }
 
-        # تسجيل المعلومات في ملف السجل بدون عنوان طويل
-        frappe.logger().debug(f"Availability Check: {debug_info}")
+        # جلب القدرة الاستيعابية للخدمة
+        section_capacity = frappe.get_value('Worker Commission', 
+            {'worker': worker, 'service_name': service_name}, 
+            'section_capacity') or 1
 
         is_available = current_overlapping < section_capacity
 
         return {
             "available": is_available,
-            "debug_info": debug_info
+            "overlapping_count": current_overlapping,
+            "section_capacity": section_capacity
         }
 
     except Exception as e:
@@ -544,6 +659,7 @@ def check_slot_availability(category=None, time=None, duration=None):
             "error": str(e)
         }
 
+
     def before_submit(self):
         if self.statues != "مؤكد":
             frappe.throw(
@@ -551,19 +667,21 @@ def check_slot_availability(category=None, time=None, duration=None):
                 title=_("تنبيه")
             )
         
-        if self.statues == "مؤكد":
-            if not self.payments:
-                frappe.throw(
-                    _("يجب إضاف طريقة دفع واحدة على الأقل عند تأكيد الحجز"),
-                    title=_("خطأ في الدفع")
-                )
-            
-            total_payments = sum(payment.amount for payment in self.payments)
-            if total_payments != self.total:
-                frappe.throw(
-                    _("مجموع الدفعات يجب أن يساوي المبلغ الإجمالي المستحق"),
-                    title=_("خطأ في الدفع")
-                )
+        # Calculate total from services
+        total = 0
+        for service in self.services:
+            service_discount = service.price * (service.discount_rate / 100) if service.discount_rate else 0
+            amount = service.price - service_discount
+            total += amount
+
+        # Calculate total payments
+        total_payments = sum(payment.amount for payment in self.payments)
+
+        if total_payments != total:
+            frappe.throw(
+                _("مجموع الدفعات يجب أن يساوي المبلغ الإجمالي المستحق"),
+                title=_("خطأ في الدفع")
+            )
 
     def get_indicator(self):
         """Return indicator color for the document"""

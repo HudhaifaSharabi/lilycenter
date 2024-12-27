@@ -13,6 +13,7 @@
   "column_break_xaxw",
   "statues",
   "date",
+  "booking_id",
   "section_break_vnpc",
   "services",
   "total",
@@ -21,6 +22,9 @@
   "\u0645\u0639\u0644\u0648\u0645\u0627\u062a_\u0627\u0644\u062f\u0641\u0639_section",
   "payments",
   "total_payment",
+  "\u062f\u0641\u0639_\u0627\u0644\u062d\u062c\u0632_section",
+  "booking_payments",
+  "total_booking_payments",
   "materials_tab",
   "\u0645\u0639\u0644\u0648\u0645\u0627\u062a_\u0627\u0644\u0645\u0648\u0627\u062f_section",
   "materials",
@@ -34,6 +38,7 @@
    "fieldtype": "Table",
    "label": "\u0627\u0644\u0645\u0648\u0627\u062f \u0627\u0644\u0645\u0633\u062a\u062e\u062f\u0645\u0647",
    "options": "Service Material",
+   "permlevel": 1,
    "read_only": 1
   },
   {
@@ -131,6 +136,7 @@
    "fieldtype": "Table",
    "label": "Worker Commission",
    "options": "Reception Commission",
+   "permlevel": 1,
    "read_only": 1
   },
   {
@@ -173,12 +179,40 @@
    "fieldtype": "Data",
    "label": "\u0631\u0642\u0645 \u0627\u0644\u062a\u0644\u0641\u0648\u0646",
    "read_only": 1
+  },
+  {
+   "fieldname": "\u062f\u0641\u0639_\u0627\u0644\u062d\u062c\u0632_section",
+   "fieldtype": "Section Break",
+   "label": "\u062f\u0641\u0639 \u0627\u0644\u062d\u062c\u0632"
+  },
+  {
+   "fieldname": "booking_payments",
+   "fieldtype": "Table",
+   "label": "Booking Payments",
+   "options": "Booking Payments",
+   "read_only": 1
+  },
+  {
+   "fieldname": "booking_id",
+   "fieldtype": "Link",
+   "label": "\u0627\u0644\u062d\u062c\u0632",
+   "options": "Booking",
+   "read_only": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "total_booking_payments",
+   "fieldtype": "Data",
+   "label": "\u0645\u062c\u0645\u0648\u0639 \u0627\u0644\u0645\u0628\u0644\u063a \u0627\u0644\u0645\u062f\u0641\u0648\u0639 \u0639\u0646\u062f \u0627\u0644\u062d\u062c\u0632",
+   "options": "0",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
+ "is_calendar_and_gantt": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-11-08 03:36:47.545915",
+ "modified": "2024-12-23 04:16:59.407738",
  "modified_by": "Administrator",
  "module": "Lilycenter",
  "name": "Reception Form",
@@ -200,18 +234,28 @@
    "write": 1
   },
   {
-   "create": 1,
+   "delete": 1,
    "email": 1,
    "export": 1,
+   "permlevel": 1,
    "print": 1,
    "read": 1,
    "report": 1,
-   "role": "reception",
+   "role": "System Manager",
    "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "print": 1,
+   "read": 1,
+   "role": "reception",
+   "select": 1,
    "write": 1
   }
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
- "states": []
+ "states": [],
+ "track_changes": 1
 }
