@@ -156,9 +156,9 @@ def get_bookings_by_date(date=None):
 
     # Fetch all categories in the "Beauty" group (whether or not they have bookings)
     categories = frappe.db.sql("""
-        SELECT name, item_group 
-        FROM `tabItem`
-        WHERE item_group = 'Beauty'
+        SELECT name, parent_item_group 
+        FROM `tabItem Group`
+        WHERE parent_item_group = 'Beauty'
     """, as_dict=True)
 
     # Generate time slots (00:00 - 23:00)
