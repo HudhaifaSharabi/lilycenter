@@ -1,7 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
- "autoname": "field:service_name",
+ "autoname": "naming_series:",
  "creation": "2024-09-10 21:08:56.458728",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -54,6 +54,14 @@
    "label": "\u0627\u0644\u0641\u0626\u0647",
    "options": "Item Group",
    "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "price",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "\u0627\u0644\u0633\u0639\u0631",
+   "non_negative": 1,
    "reqd": 1
   },
   {
@@ -113,7 +121,7 @@
  "modified_by": "Administrator",
  "module": "Lilycenter",
  "name": "Service",
- "naming_rule": "By fieldname",
+ "naming_rule": "By \"Naming Series\" field",
  "owner": "Administrator",
  "permissions": [
   {
