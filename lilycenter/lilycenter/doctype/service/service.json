@@ -8,9 +8,8 @@
  "field_order": [
   "\u0627\u0644\u062e\u062f\u0645\u0629_section",
   "service_name",
-  "category",
   "column_break_uxqq",
-  "price",
+  "category",
   "naming_series",
   "section_break_tuqk",
   "table_material",
@@ -54,15 +53,6 @@
    "label": "\u0627\u0644\u0641\u0626\u0647",
    "options": "Item Group",
    "read_only": 1,
-   "reqd": 1
-  },
-  {
-   "fetch_from": "service_name.standard_rate",
-   "fieldname": "price",
-   "fieldtype": "Currency",
-   "in_list_view": 1,
-   "label": "\u0627\u0644\u0633\u0639\u0631",
-   "non_negative": 1,
    "reqd": 1
   },
   {
@@ -111,7 +101,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-12-03 05:31:46.990076",
+ "modified": "2025-01-13 17:20:37.543787",
  "modified_by": "Administrator",
  "module": "Lilycenter",
  "name": "Service",

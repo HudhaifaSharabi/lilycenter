@@ -441,7 +441,22 @@ frm.add_custom_button(__('عرض الحجوزات حسب التاريخ'), funct
                                 var child = frm.add_child("materials");
                                 child.item_code = row.item_code; 
                                 child.quantity = row.quantity; 
-                                child.uom = row.uom; 
+                                child.uom = row.uom;
+                                child.service_name = service.service_name;
+                                
+                                // جلب آخر سعر من Stock Ledger Entry
+                                frappe.call({
+                                    method: 'lilycenter.lilycenter.doctype.reception_form.reception_form.get_latest_stock_rate',
+                                    args: {
+                                        item_code: row.item_code
+                                    },
+                                    callback: function(r) {
+                                        if (r.message) {
+                                            child.rate = r.message;
+                                            frm.refresh_field("materials");
+                                        }
+                                    }
+                                });
                             });
                             frm.refresh_field("materials");
                         }
@@ -453,13 +468,57 @@ frm.add_custom_button(__('عرض الحجوزات حسب التاريخ'), funct
         }
     },
     before_submit: function (frm) {
-        if (frm.doc.statues !== "مؤكد") {
+        if (frm.doc.statues !== "مؤكد" && frm.doc.statues !== "أجل") {
             frappe.throw({
                 title: __('تنبيه'),
-                message: __('يجب عليك تأكيد الحجز قبل الإرسال'),
+                message: __('يجب عليك تأكيد الحجز أو تأجيله قبل الإرسال'),
                 indicator: 'red'
             });
             return false;
+        }
+
+        // Check payment validation for "أجل" status
+        let total = 0;
+        frm.doc.services.forEach(service => {
+            let service_discount = service.discount_rate ? (service.price * service.discount_rate / 100) : 0;
+            let amount = service.price - service_discount;
+            total += amount;
+        });
+
+        // Calculate total booking payments
+        let total_booking_payments = 0;
+        if (frm.doc.booking_payments) {
+            total_booking_payments = frm.doc.booking_payments.reduce((sum, payment) => sum + payment.amount, 0);
+        }
+
+        // Calculate total payments
+        let total_payments = 0;
+        if (frm.doc.payments) {
+            total_payments = frm.doc.payments.reduce((sum, payment) => sum + payment.amount, 0);
+        }
+
+        // Calculate grand total of all payments
+        let grand_total_payments = total_payments + total_booking_payments;
+
+        // التحقق من المدفوعات حسب الحالة
+        if (frm.doc.statues === "مؤكد") {
+            if (grand_total_payments !== total) {
+                frappe.throw({
+                    title: __('خطأ في الدفع'),
+                    message: __('مجموع الدفعات يجب أن يساوي المبلغ الإجمالي المستحق'),
+                    indicator: 'red'
+                });
+                return false;
+            }
+        } else if (frm.doc.statues === "أجل") {
+            if (grand_total_payments >= total) {
+                frappe.throw({
+                    title: __('خطأ في الدفع'),
+                    message: __('في حالة التأجيل، يجب أن يكون المبلغ المدفوع أقل من المبلغ الإجمالي'),
+                    indicator: 'red'
+                });
+                return false;
+            }
         }
     },
     
@@ -486,26 +545,40 @@ frm.add_custom_button(__('عرض الحجوزات حسب التاريخ'), funct
                 total += amount || 0;
             });
             
-            // Check if total payments match calculated service total
+            // Calculate total payments including booking payments
             let total_payments = 0;
             (frm.doc.payments || []).forEach(row => {
                 total_payments += row.amount || 0;
             });
             
             let total_booking_payments = 0;
-
-            frm.doc.booking_payments.forEach(booking_payment => {
+            (frm.doc.booking_payments || []).forEach(booking_payment => {
                 total_booking_payments += booking_payment.amount || 0;
             });
             
+            let grand_total_payments = total_payments + total_booking_payments;
             
-            total_payments = total_payments + total_booking_payments
-            // if (total_payments !== total) {
-            //     frappe.show_alert({
-            //         message: __('مجموع الدفعات يجب أن يساوي المبلغ الإجمالي المستحق'),
-            //         indicator: 'red'
-            //     });
-            // }
+            if (grand_total_payments !== total) {
+                frappe.show_alert({
+                    message: __('مجموع الدفعات يجب أن يساوي المبلغ الإجمالي المستحق'),
+                    indicator: 'red'
+                });
+            }
+        } else if (frm.doc.statues === "أجل") {
+            frm.set_df_property('payments', 'reqd', 0);
+            
+            // Calculate totals including booking payments
+            let total = frm.doc.total || 0;
+            let total_payments = (frm.doc.total_payment || 0);
+            let total_booking_payments = (frm.doc.total_booking_payments || 0);
+            let grand_total_payments = total_payments + total_booking_payments;
+            
+            if (grand_total_payments >= total) {
+                frappe.show_alert({
+                    message: __('في حالة التأجيل، يجب أن يكون المبلغ المدفوع أقل من المبلغ الإجمالي'),
+                    indicator: 'red'
+                });
+            }
         } else {
             frm.set_df_property('payments', 'reqd', 0);
         }
@@ -530,6 +603,23 @@ frappe.ui.form.on('Reception Service', {
             frappe.model.set_value(cdt, cdn, 'section_capacity', null);
             frappe.model.set_value(cdt, cdn, 'section_capacity', null);
             frappe.model.set_value(cdt, cdn, 'duration', null);
+            if (row.service_name) {
+                frappe.call({
+                    method: 'lilycenter.lilycenter.doctype.reception_form.reception_form.get_latest_price',
+                    args: {
+                        item_code: row.service_name
+                    },
+                    callback: function(r) {
+                        if (r.message) {
+                            frappe.model.set_value(cdt, cdn, 'price', r.message);
+                            frm.refresh_field('services');
+                            calculate_total(frm);
+                        } else {
+                            frappe.msgprint(__('لم يتم العثور على سعر لهذه الخدمة'));
+                        }
+                    }
+                });
+            }
         
        
     },

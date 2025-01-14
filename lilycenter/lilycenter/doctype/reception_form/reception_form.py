@@ -40,36 +40,57 @@ class ReceptionForm(Document):
             total += amount
 
         # Calculate total booking payments
-        total_booking_payment=0
+        total_booking_payments = sum(booking_payment.amount for booking_payment in self.booking_payments)
         
-        total_booking_payment = sum(booking_payment.amount for booking_payment in self.booking_payments)
         # Calculate total payments
-        total_payments=0
-        total_payments = (sum(payment.amount for payment in self.payments)+total_booking_payment)
+        total_payments = sum(payment.amount for payment in self.payments)
         
-        if total_payments != total:
-            frappe.throw(
-                _("مجموع الدفعات يجب أن يساوي المبلغ الإجمالي المستحق"),
-                title=_("خطأ في الدفع")
-            )        # Handle material deduction from inventory
+        # Calculate grand total of all payments
+        grand_total_payments = total_payments + total_booking_payments
+        
+        # التحقق من المدفوعات حسب الحالة
+        if self.statues == "مؤكد":
+            if grand_total_payments != total:
+                frappe.throw(
+                    _("مجموع الدفعات يجب أن يساوي المبلغ الإجمالي المستحق"),
+                    title=_("خطأ في الدفع")
+                )
+        elif self.statues == "أجل":
+            if grand_total_payments >= total:
+                frappe.throw(
+                    _("في حالة التأجيل، يجب أن يكون المبلغ المدفوع أقل من المبلغ الإجمالي"),
+                    title=_("خطأ في الدفع")
+                )
+            
+        # Handle material deduction from inventory
         self.deduct_materials()
-        #Create Sales Invoice based on services
+        
+        # Create Sales Invoice based on services
         self.create_sales_invoice()
         
         # Create Process Payments based on services
         self.process_payments()
         
-
-
         # Add Worker Commissions to Commission Payment
         self.process_worker_commission()
 
-        
-            
-            
     def deduct_materials(self):
         if self.materials:
             for material in self.materials:
+                # جلب آخر سعر من Stock Ledger Entry
+                latest_rate = frappe.get_all(
+                    'Stock Ledger Entry',
+                    filters={
+                        'item_code': material.item_code,
+                        'is_cancelled': 0
+                    },
+                    fields=['valuation_rate'],
+                    order_by='posting_date desc, posting_time desc, creation desc',
+                    limit=1
+                )
+                
+                rate = latest_rate[0].valuation_rate if latest_rate else 0
+                
                 stock_entry = frappe.get_doc({
                     'doctype': 'Stock Entry',
                     'stock_entry_type': 'Material Issue',
@@ -77,6 +98,7 @@ class ReceptionForm(Document):
                         {
                             'item_code': material.item_code,
                             'qty': material.quantity,
+                            'basic_rate': rate,  # استخدام آخر سعر
                             's_warehouse': 'مخازن - L'
                         }
                     ]
@@ -87,46 +109,108 @@ class ReceptionForm(Document):
             frappe.throw('يرجى تحديد المواد قبل تقديم الطلب.')
 
     def create_sales_invoice(self):
-    # Loop through each service and create a separate sales invoice for each one
         for service in self.services:
-            # Calculate discount for the current service
-            service_discount = service.price * (service.discount_rate / 100) if service.discount_rate else 0
-            amount = service.price - service_discount  # Final amount after discount
+            # استخدام الدالة get_latest_price للحصول على أحدث سعر
+            price_list_rate = get_latest_price(service.service_name)
 
-            # Prepare the item data for the service
+            if not price_list_rate:
+                frappe.throw(_("لا يوجد سعر محدد للخدمة {0}").format(service.service_name))
+
+            # حساب الخصم والمبلغ النهائي
+            service_discount = price_list_rate * (service.discount_rate / 100) if service.discount_rate else 0
+            amount = price_list_rate - service_discount
+
+            # إعداد بيانات الفاتورة
             items = [{
                 'item_code': service.service_name,
                 'item_name': service.service_name,
                 'qty': 1,
-                'rate': amount,
+                'rate': amount,  # استخدام السعر المحسوب مباشرة
                 'amount': amount,
-                'income_account': service.income_account # Price after discount
+                'income_account': service.income_account
             }]
 
-            # Create Sales Invoice for the current service
+            # إنشاء الفاتورة
             sales_invoice = frappe.get_doc({
                 'doctype': 'Sales Invoice',
                 'customer': self.customer,
                 'posting_date': nowdate(),
                 'items': items,
-                'total': amount,  # Total amount for this service
+                'total': amount,
                 'grand_total': amount,
                 'outstanding_amount': amount,
             })
 
-            # Insert and submit the Sales Invoice
             sales_invoice.insert()
             sales_invoice.submit()
 
-            # If there's a discount, create a journal entry for it
             if service_discount > 0:
-                create_discount_journal_entry(sales_invoice, service.service_name, service_discount , service.income_account ,service.discount_account)
+                create_discount_journal_entry(
+                    sales_invoice, 
+                    service.service_name, 
+                    service_discount, 
+                    service.income_account, 
+                    service.discount_account
+                )
 
+    def validate(self):
+        # self.validate_time_conflict()
+        
+        # self._validate_customer()
+        # self._validate_status()
+        # self._validate_services()
+        # self._validate_total()
+        # self._validate_payments()
+        # self._validate_materials()
+        # self._validate_worker_commission()
+        
+
+        if self.statues == "مؤكد":
+            if not self.payments:
+                frappe.throw(
+                    _("يجب إضاف طريقة دفع واحدة على الأقل عند تأكيد الحجز"),
+                    title=_("خطأ في الدفع")
+                )
+            
+        total = 0
+        for service in self.services:
+            service_discount = service.price * (service.discount_rate / 100) if service.discount_rate else 0
+            amount = service.price - service_discount
+            total += amount
+
+        # Calculate total booking payments
+        total_booking_payments = sum(booking_payment.amount for booking_payment in self.booking_payments)
+        
+        # Calculate total payments
+        total_payments = sum(payment.amount for payment in self.payments)
+        
+        # Calculate grand total of all payments
+        grand_total_payments = total_payments + total_booking_payments
+        
+        # التحقق من المدفوعات حسب الحالة
+        if self.statues == "مؤكد":
+            if grand_total_payments != total:
+                frappe.throw(
+                    _("مجموع الدفعات يجب أن يساوي المبلغ الإجمالي المستحق"),
+                    title=_("خطأ في الدفع")
+                )
+        elif self.statues == "أجل":
+            if grand_total_payments >= total:
+                frappe.throw(
+                    _("في حالة التأجيل، يجب أن يكون المبلغ المدفوع أقل من المبلغ الإجمالي"),
+                    title=_("خطأ في الدفع")
+                )
 
 
     def process_payments(self):
         if self.payments:
             for row in self.payments:
+                # Check if payment mode is bank-related and validate reference details
+                payment_type = frappe.get_value('Mode of Payment', row.mode_of_payment, 'type')
+                if payment_type == 'Bank':
+                    if not row.reference_no or not row.reference_date:
+                        frappe.throw(_('رقم المرجع وتاريخ المرجع إلزاميان للمعاملات المصرفية'))
+
                 payment_entry = frappe.get_doc({
                     'doctype': 'Payment Entry',
                     'payment_type': 'Receive',
@@ -136,11 +220,14 @@ class ReceptionForm(Document):
                     'paid_amount': row.amount,
                     'received_amount': row.amount,
                     'paid_to': get_default_paid_to_account(row.mode_of_payment),
+                    # Add reference details if it's a bank transaction
+                    'reference_no': row.reference_no if payment_type == 'Bank' else None,
+                    'reference_date': row.reference_date if payment_type == 'Bank' else None,
                 })
                 payment_entry.insert()
                 payment_entry.submit()
         else:
-            frappe.throw('يرجى تحديد المدفوعات قبل تقديم الطلب.')
+            frappe.throw(_('يرجى تحديد المدفوعات قبل تقديم الطلب.'))
 
     def process_worker_commission(self):
         for worker_commission in self.worker_commission:
@@ -255,7 +342,6 @@ def get_material(condition_value):
     except Exception as e:
         frappe.log_error(f"Error in selecting data: {str(e)}")
         return None
-
 @frappe.whitelist()
 def get_employees_by_service(doctype, txt, searchfield, start, page_len, filters):
     service_name = filters.get('service_name')
@@ -348,42 +434,6 @@ def get_booking_details(booking_id):
     #                         _("Time conflict detected. Client cannot receive two services at the same time.")
     #                     )
 
-    def validate(self):
-        # self.validate_time_conflict()
-        
-        self._validate_customer()
-        self._validate_status()
-        self._validate_services()
-        self._validate_total()
-        self._validate_payments()
-        self._validate_materials()
-        self._validate_worker_commission()
-
-        if self.statues == "مؤكد":
-            if not self.payments:
-                frappe.throw(
-                    _("يجب إضاف طريقة دفع واحدة على الأقل عند تأكيد الحجز"),
-                    title=_("خطأ في الدفع")
-                )
-            
-            # Calculate total from services
-            total = 0
-            for service in self.services:
-                service_discount = service.price * (service.discount_rate / 100) if service.discount_rate else 0
-                amount = service.price - service_discount
-                total += amount
-            # Calculate total booking payments
-            total_booking_payment=0
-            total_booking_payment = sum(total_booking_payments.amount for total_booking_payment in self.total_booking_payments)
-            # Calculate total payments
-            total_payments=0
-            total_payments = (sum(payment.amount for payment in self.payments)+total_booking_payment)
-            
-            if total_payments :
-                frappe.throw(
-                    _("مجموع الدفعات يجب أن يساوي المبلغ الإجمالي المستحق"),
-                    title=_("خطأ في الدفع")
-                )
 
     def _validate_customer(self):
         """Validate customer field"""
@@ -667,21 +717,34 @@ def check_slot_availability(service_name=None, worker=None, time=None, duration=
                 title=_("تنبيه")
             )
         
-        # Calculate total from services
         total = 0
         for service in self.services:
             service_discount = service.price * (service.discount_rate / 100) if service.discount_rate else 0
             amount = service.price - service_discount
             total += amount
 
+        # Calculate total booking payments
+        total_booking_payments = sum(booking_payment.amount for booking_payment in self.booking_payments)
+        
         # Calculate total payments
         total_payments = sum(payment.amount for payment in self.payments)
-
-        if total_payments != total:
-            frappe.throw(
-                _("مجموع الدفعات يجب أن يساوي المبلغ الإجمالي المستحق"),
-                title=_("خطأ في الدفع")
-            )
+        
+        # Calculate grand total of all payments
+        grand_total_payments = total_payments + total_booking_payments
+        
+        # التحقق من المدفوعات حسب الحالة
+        if self.statues == "مؤكد":
+            if grand_total_payments != total:
+                frappe.throw(
+                    _("مجموع الدفعات يجب أن يساوي المبلغ الإجمالي المستحق"),
+                    title=_("خطأ في الدفع")
+                )
+        elif self.statues == "أجل":
+            if grand_total_payments >= total:
+                frappe.throw(
+                    _("في حالة التأجيل، يجب أن يكون المبلغ المدفوع أقل من المبلغ الإجمالي"),
+                    title=_("خطأ في الدفع")
+                )
 
     def get_indicator(self):
         """Return indicator color for the document"""
@@ -693,3 +756,46 @@ def check_slot_availability(service_name=None, worker=None, time=None, duration=
         return {
             'order_by': 'CASE WHEN statues != "مؤكد" THEN 0 ELSE 1 END, modified DESC'
         }
+
+# Main ways ERPNext gets item rates
+def get_item_rate():
+    # 1. Item Price List
+    rate = frappe.get_value('Item Price', 
+        {'item_code': item_code, 'price_list': price_list}, 
+        'price_list_rate')
+    
+    # 2. Item Default Rate
+    if not rate:
+        rate = frappe.get_value('Item', item_code, 'standard_rate')
+    
+    # 3. Last Purchase Rate
+    if not rate:
+        rate = frappe.get_value('Item', item_code, 'last_purchase_rate')
+
+@frappe.whitelist()
+def get_latest_price(item_code):
+    latest_price = frappe.get_all(
+        'Item Price',
+        filters={
+            'item_code': item_code,
+            'selling': 1  # للتأكد من أنه سعر بيع
+        },
+        fields=['price_list_rate'],
+        order_by='valid_from desc, modified desc',  # ترتيب حسب تاريخ السريان ثم تاريخ التعديل
+        limit=1
+    )
+    return latest_price[0].price_list_rate if latest_price else None
+
+@frappe.whitelist()
+def get_latest_stock_rate(item_code):
+    latest_rate = frappe.get_all(
+        'Stock Ledger Entry',
+        filters={
+            'item_code': item_code,
+            'is_cancelled': 0
+        },
+        fields=['valuation_rate'],
+        order_by='posting_date desc, posting_time desc, creation desc',
+        limit=1
+    )
+    return latest_rate[0].valuation_rate if latest_rate else 0

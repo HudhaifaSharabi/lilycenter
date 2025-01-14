@@ -93,7 +93,23 @@ frappe.ui.form.on('Reception Service', {
             frappe.model.set_value(cdt, cdn, 'section_capacity', null);
             frappe.model.set_value(cdt, cdn, 'section_capacity', null);
             frappe.model.set_value(cdt, cdn, 'duration', null);
-        
+            if (row.service_name) {
+                frappe.call({
+                    method: 'lilycenter.lilycenter.doctype.reception_form.reception_form.get_latest_price',
+                    args: {
+                        item_code: row.service_name
+                    },
+                    callback: function(r) {
+                        if (r.message) {
+                            frappe.model.set_value(cdt, cdn, 'price', r.message);
+                            frm.refresh_field('services');
+                            calculate_total(frm);
+                        } else {
+                            frappe.msgprint(__('لم يتم العثور على سعر لهذه الخدمة'));
+                        }
+                    }
+                });
+            }
        
     },
 

@@ -20,10 +20,30 @@ class Booking(Document):
             if booking_date < today:
                 frappe.throw(_("لا يمكن حجز موعد في تاريخ سابق لليوم الحالي"))  # رسالة خطأ بالعربي
     
+        # Calculate total amount from services
+        total_amount = 0
+        for service in self.services:
+            service_discount = service.price * (service.discount_rate / 100) if service.discount_rate else 0
+            amount = service.price - service_discount
+            total_amount += amount
+        # Calculate total payments
+        total_payments = sum(payment.amount for payment in self.payments) if self.payments else 0
+        
+        # Validate total payments against total amount
+        if total_payments > total_amount:
+            frappe.throw(_("مجموع المدفوعات ({0}) لا يمكن أن يكون أكبر من المبلغ المستحق ({1})").format(
+                total_payments, total_amount
+            ))
 
     def process_payments(self):
         if self.payments:
             for row in self.payments:
+                # Check if payment mode is bank-related and validate reference details
+                payment_type = frappe.get_value('Mode of Payment', row.mode_of_payment, 'type')
+                if payment_type == 'Bank':
+                    if not row.reference_no or not row.reference_date:
+                        frappe.throw(_('Reference No and Reference Date are mandatory for Bank transactions'))
+
                 payment_entry = frappe.get_doc({
                     'doctype': 'Payment Entry',
                     'payment_type': 'Receive',
@@ -33,106 +53,14 @@ class Booking(Document):
                     'paid_amount': row.amount,
                     'received_amount': row.amount,
                     'paid_to': get_default_paid_to_account(row.mode_of_payment),
+                    'reference_no': row.reference_no if payment_type == 'Bank' else None,
+                    'reference_date': row.reference_date if payment_type == 'Bank' else None,
                 })
                 payment_entry.insert()
                 payment_entry.submit()
         else:
             frappe.throw('يرجى تحديد المدفوعات قبل تقديم الطلب.')
 
-@frappe.whitelist()
-def check_slot_availability(category=None, time=None, duration=None, booking_date=None):
-    """التحقق من توفر الموعد"""
-    try:
-        if not all([category, time, duration, booking_date]):
-            return {
-                "available": False,
-                "error": "بيانات غير مكتملة"
-            }
-
-        # تحويل المدة إلى دقائق
-        try:
-            if isinstance(duration, str) and ':' in duration:
-                hours, minutes = duration.split(':')[:2]
-                duration_minutes = (int(hours) * 60) + int(minutes)
-            else:
-                duration_minutes = int(float(duration))
-        except:
-            duration_minutes = 60  # القيمة الافتراضية
-
-        # البحث عن الخدمات المتداخلة
-        overlapping_services = frappe.db.sql("""
-            SELECT 
-                rs.time as service_time,
-                CASE 
-                    WHEN rs.duration REGEXP '^[0-9]+:[0-9]+' THEN 
-                        (
-                            CAST(SUBSTRING_INDEX(rs.duration, ':', 1) AS UNSIGNED) * 60 +
-                            CAST(SUBSTRING_INDEX(rs.duration, ':', -1) AS UNSIGNED)
-                        )
-                    ELSE CAST(rs.duration AS DECIMAL(10,2))
-                END as duration_minutes
-            FROM `tabReception Service` rs
-            JOIN `tabBooking` b ON rs.parent = b.name
-            WHERE b.docstatus < 2
-                AND rs.category = %(category)s
-                AND b.booking_date = %(booking_date)s
-                AND b.booking_status != 'ملغي'
-        """, {
-            'category': category,
-            'booking_date': booking_date
-        }, as_dict=1)
-
-        # حساب التداخل
-        current_overlapping = 0
-        time_parts = time.split(':')
-        requested_minutes = int(time_parts[0]) * 60 + int(time_parts[1])
-        requested_end_minutes = requested_minutes + duration_minutes
-
-        for service in overlapping_services:
-            service_time_parts = str(service.service_time).split(':')
-            service_minutes = int(service_time_parts[0]) * 60 + int(service_time_parts[1])
-            service_end_minutes = service_minutes + int(service.duration_minutes)
-
-            # التحقق من التداخل
-            if not (requested_end_minutes <= service_minutes or 
-                   requested_minutes >= service_end_minutes):
-                current_overlapping += 1
-
-        # الحصول على سعة القسم
-        section_capacity = frappe.get_value('Item Group', category, 'section_capacity') or 1
-
-        # تحضير معلومات التشخيص
-        debug_info = {
-            "category": category,
-            "time": time,
-            "duration": duration_minutes,
-            "booking_date": booking_date,
-            "section_capacity": section_capacity,
-            "overlapping_count": current_overlapping,
-            "existing_services": [
-                {
-                    "time": str(s.service_time),
-                    "duration": int(s.duration_minutes)
-                } for s in overlapping_services
-            ]
-        }
-
-        # تسجيل المعلومات في ملف السجل
-        frappe.logger().debug(f"Availability Check: {debug_info}")
-
-        is_available = current_overlapping < section_capacity
-
-        return {
-            "available": is_available,
-            "debug_info": debug_info
-        }
-
-    except Exception as e:
-        frappe.logger().error(f"Slot Check Error: {str(e)}")
-        return {
-            "available": False,
-            "error": str(e)
-        }
 @frappe.whitelist()
 def get_bookings_by_date(date=None):
     if not date:
