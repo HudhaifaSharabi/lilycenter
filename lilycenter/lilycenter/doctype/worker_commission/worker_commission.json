@@ -12,8 +12,11 @@
   "worker_name",
   "section_break_xqbi",
   "service_name",
-  "duration",
   "column_break_ddct",
+  "time_check",
+  "section_break_vwwx",
+  "duration",
+  "column_break_tpra",
   "section_capacity",
   "section_break_iqad",
   "commission"
@@ -88,11 +91,26 @@
   {
    "fieldname": "column_break_ddct",
    "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "time_check",
+   "fieldtype": "Check",
+   "label": "Time Check"
+  },
+  {
+   "depends_on": "eval: doc.time_check",
+   "fieldname": "section_break_vwwx",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_tpra",
+   "fieldtype": "Column Break"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-12-03 05:21:12.201367",
+ "modified": "2025-01-17 16:40:58.494155",
  "modified_by": "Administrator",
  "module": "Lilycenter",
  "name": "Worker Commission",

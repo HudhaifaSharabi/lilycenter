@@ -37,6 +37,8 @@ class Booking(Document):
 
     def process_payments(self):
         if self.payments:
+            # Fetch the cost_center from Lilycenter Setting
+            cost_center = frappe.db.get_single_value('Lilycenter Setting', 'cost_center')
             for row in self.payments:
                 # Check if payment mode is bank-related and validate reference details
                 payment_type = frappe.get_value('Mode of Payment', row.mode_of_payment, 'type')
@@ -55,6 +57,7 @@ class Booking(Document):
                     'paid_to': get_default_paid_to_account(row.mode_of_payment),
                     'reference_no': row.reference_no if payment_type == 'Bank' else None,
                     'reference_date': row.reference_date if payment_type == 'Bank' else None,
+                    'cost_center': cost_center,
                 })
                 payment_entry.insert()
                 payment_entry.submit()

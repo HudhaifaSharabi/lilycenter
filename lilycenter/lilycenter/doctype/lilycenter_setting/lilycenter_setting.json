@@ -1,0 +1,66 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-01-23 19:29:56.147532",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "cost_center",
+  "warehouse_account",
+  "column_break_hwau",
+  "warehouse"
+ ],
+ "fields": [
+  {
+   "fieldname": "cost_center",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "\u0645\u0631\u0643\u0632 \u0627\u0644\u062a\u0643\u0644\u0641\u0647",
+   "options": "Cost Center",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_hwau",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "warehouse",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "\u0627\u0644\u0645\u062e\u0632\u0646",
+   "options": "Warehouse",
+   "reqd": 1
+  },
+  {
+   "description": "\u062d\u0633\u0627\u0628 \u0627\u0644\u0645\u062e\u0632\u0648\u0646 \u0627\u0644\u062e\u0627\u0635 \u0628\u0627\u0644\u062a\u0633\u0648\u064a\u0629",
+   "fieldname": "warehouse_account",
+   "fieldtype": "Link",
+   "label": "\u062d\u0633\u0627\u0628 \u0627\u0644\u0645\u062e\u0632\u0648\u0646",
+   "options": "Account",
+   "reqd": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2025-01-23 21:27:08.787880",
+ "modified_by": "Administrator",
+ "module": "Lilycenter",
+ "name": "Lilycenter Setting",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

@@ -17,7 +17,8 @@
   "income_account",
   "discount_account",
   "column_break_osor",
-  "commission_account"
+  "commission_account",
+  "cost_center"
  ],
  "fields": [
   {
@@ -97,11 +98,18 @@
    "fieldname": "\u0627\u0644\u062e\u062f\u0645\u0629_section",
    "fieldtype": "Section Break",
    "label": "\u0627\u0644\u062e\u062f\u0645\u0629"
+  },
+  {
+   "fieldname": "cost_center",
+   "fieldtype": "Link",
+   "label": "\u0645\u0631\u0643\u0632 \u0627\u0644\u062a\u0643\u0644\u0641\u0647",
+   "options": "Cost Center",
+   "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-01-13 17:20:37.543787",
+ "modified": "2025-01-23 20:47:28.110951",
  "modified_by": "Administrator",
  "module": "Lilycenter",
  "name": "Service",
