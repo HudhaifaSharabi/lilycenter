@@ -69,90 +69,176 @@ class ReceptionForm(Document):
         self.create_sales_invoice()
         
         # Create Process Payments based on services
-        self.process_payments()
+        # self.process_payments()
         
         # Add Worker Commissions to Commission Payment
         self.process_worker_commission()
 
     def deduct_materials(self):
-        if self.materials:
-            for material in self.materials:
-                # جلب آخر سعر من Stock Ledger Entry
-                latest_rate = frappe.get_all(
-                    'Stock Ledger Entry',
-                    filters={
-                        'item_code': material.item_code,
-                        'is_cancelled': 0
-                    },
-                    fields=['valuation_rate'],
-                    order_by='posting_date desc, posting_time desc, creation desc',
-                    limit=1
-                )
-                
-                rate = latest_rate[0].valuation_rate if latest_rate else 0
-                
-                stock_entry = frappe.get_doc({
-                    'doctype': 'Stock Entry',
-                    'stock_entry_type': 'Material Issue',
-                    'items': [
-                        {
-                            'item_code': material.item_code,
-                            'qty': material.quantity,
-                            'basic_rate': rate,  # استخدام آخر سعر
-                            's_warehouse': 'مخازن - L'
-                        }
-                    ]
-                })
-                stock_entry.insert()
-                stock_entry.submit()
-        else:
+        if not self.materials:
             frappe.throw('يرجى تحديد المواد قبل تقديم الطلب.')
+        
+        # Prepare a list to batch items in a single Stock Entry
+        stock_entry_items = []
+        # Fetch the cost_center from Lilycenter Setting
+        # Fetch the income_account from Coffee Service
+            
+        warehouse = frappe.db.get_single_value('Lilycenter Setting', 'warehouse')
+        warehouse_account = frappe.db.get_single_value('Lilycenter Setting', 'warehouse_account')
+
+        
+        for material in self.materials:
+            # Fetch the latest rate from Stock Ledger Entry
+            latest_rate = frappe.get_all(
+                'Stock Ledger Entry',
+                filters={
+                    'item_code': material.item_code,
+                    'is_cancelled': 0
+                },
+                fields=['valuation_rate'],
+                order_by='posting_date desc, posting_time desc, creation desc',
+                limit=1
+            )
+            rate = latest_rate[0].valuation_rate if latest_rate else 0
+            cost_center = frappe.db.get_value(
+                'Service', 
+                {'service_name': material.service_name}, 
+                'cost_center'
+            )
+            # Add the material to the items list for batch processing
+            stock_entry_items.append({
+                'item_code': material.item_code,
+                'qty': material.quantity,
+                'basic_rate': rate,  # Use the latest rate
+                's_warehouse': warehouse,
+                'cost_center': cost_center,
+                'expense_account': warehouse_account
+            })
+        
+        # Create a single Stock Entry for all materials
+        if stock_entry_items:
+            stock_entry = frappe.get_doc({
+                'doctype': 'Stock Entry',
+                'stock_entry_type': 'Material Issue',
+                'items': stock_entry_items
+            })
+            stock_entry.insert()
+            stock_entry.submit()
 
     def create_sales_invoice(self):
-        for service in self.services:
-            # استخدام الدالة get_latest_price للحصول على أحدث سعر
-            price_list_rate = get_latest_price(service.service_name)
+        """
+        Create a Sales Invoice and handle discounts for services.
+        """
+        items = []  # List to store all items for the Sales Invoice
+        total_amount = 0  # Total amount of the invoice
+        discount_entries = []  # Accounts for the Journal Entry
 
+        for service in self.services:
+            # Get the latest price for the service
+            price_list_rate = get_latest_price(service.service_name)
             if not price_list_rate:
                 frappe.throw(_("لا يوجد سعر محدد للخدمة {0}").format(service.service_name))
 
-            # حساب الخصم والمبلغ النهائي
+            # Calculate discount and net amount
             service_discount = price_list_rate * (service.discount_rate / 100) if service.discount_rate else 0
-            amount = price_list_rate - service_discount
+            net_amount = price_list_rate - service_discount
 
-            # إعداد بيانات الفاتورة
-            items = [{
+            # Fetch necessary account details
+            income_account = frappe.db.get_value('Service', {'service_name': service.service_name}, 'income_account')
+            discount_account = frappe.db.get_value('Service', {'service_name': service.service_name}, 'discount_account')
+            cost_center = frappe.db.get_value('Service', {'service_name': service.service_name}, 'cost_center')
+
+            # Add service details to Sales Invoice items
+            items.append({
                 'item_code': service.service_name,
                 'item_name': service.service_name,
                 'qty': 1,
-                'rate': amount,  # استخدام السعر المحسوب مباشرة
-                'amount': amount,
-                'income_account': service.income_account
-            }]
-
-            # إنشاء الفاتورة
-            sales_invoice = frappe.get_doc({
-                'doctype': 'Sales Invoice',
-                'customer': self.customer,
-                'posting_date': nowdate(),
-                'items': items,
-                'total': amount,
-                'grand_total': amount,
-                'outstanding_amount': amount,
+                'rate': net_amount,
+                'amount': net_amount,
+                'income_account': income_account,
+                'cost_center': cost_center
             })
 
-            sales_invoice.insert()
-            sales_invoice.submit()
+            total_amount += net_amount
 
+            # Add discount entries if applicable
             if service_discount > 0:
-                create_discount_journal_entry(
-                    sales_invoice, 
-                    service.service_name, 
-                    service_discount, 
-                    service.income_account, 
-                    service.discount_account
-                )
+                discount_entries.append({
+                    "account": discount_account,  # Debit the discount account
+                    "debit_in_account_currency": service_discount,
+                    "party_type": "Customer",
+                    "party": self.customer,
+                })
+                discount_entries.append({
+                    "account": income_account,  # Credit the income account
+                    "credit_in_account_currency": service_discount,
+                    "party_type": "Customer",
+                    "party": self.customer,
+                })
 
+        if not items:
+            frappe.throw(_("لا توجد خدمات لإنشاء فاتورة مبيعات."))
+
+        # Create and submit the Sales Invoice
+        sales_invoice = frappe.get_doc({
+            'doctype': 'Sales Invoice',
+            'customer': self.customer,
+            'posting_date': nowdate(),
+            'items': items,
+            'total': total_amount,
+            'grand_total': total_amount,
+            'outstanding_amount': total_amount,
+        })
+        # Add Reception Form details to user_remark
+        reception_name = self.name  # Assuming `self` is the Reception Form document
+        sales_invoice.user_remark = f"تم تطبيق الخصومات على فاتورة المبيعات: {sales_invoice.name} بواسطة استمارة الاستقبال: {reception_name}"
+
+        sales_invoice.insert()
+        sales_invoice.submit()
+
+        # Create a Journal Entry for the discounts if applicable
+        if discount_entries:
+            create_discount_journal_entry(sales_invoice, discount_entries, self.name)   
+        # Process payments for the created Sales Invoice
+        self.process_payments(sales_invoice.name)
+    def process_payments(self, sales_invoice_name):
+        cost_center = frappe.db.get_single_value('Lilycenter Setting', 'cost_center')
+        if not self.payments:
+            frappe.throw(_('يرجى تحديد المدفوعات قبل تقديم الطلب.'))
+
+        for row in self.payments:
+            sales_invoice = frappe.get_doc("Sales Invoice", sales_invoice_name)
+            # Check if payment mode is bank-related and validate reference details
+            payment_type = frappe.get_value('Mode of Payment', row.mode_of_payment, 'type')
+            if payment_type == 'Bank' and (not row.reference_no or not row.reference_date):
+                frappe.throw(_('رقم المرجع وتاريخ المرجع إلزاميان للمعاملات المصرفية'))
+
+            # Create Payment Entry
+            payment_entry = frappe.get_doc({
+                'doctype': 'Payment Entry',
+                'payment_type': 'Receive',
+                'mode_of_payment': row.mode_of_payment,
+                'party_type': 'Customer',
+                'party': self.customer,
+                'paid_amount': row.amount,
+                'received_amount': row.amount,
+                'paid_to': get_default_paid_to_account(row.mode_of_payment),
+                'reference_no': row.reference_no if payment_type == 'Bank' else None,
+                'reference_date': row.reference_date if payment_type == 'Bank' else None,
+                'cost_center': cost_center,
+                'references': [
+                    {
+                        'reference_doctype': 'Sales Invoice',
+                        'reference_name': sales_invoice_name,
+                        'total_amount': sales_invoice.grand_total,  # Ensure total amount is added
+                        'outstanding_amount': sales_invoice.outstanding_amount,
+                        'allocated_amount': row.amount,
+                    }
+                ],
+            })
+            payment_entry.insert()
+            payment_entry.submit()
+        
     def validate(self):
         # self.validate_time_conflict()
         
@@ -202,35 +288,19 @@ class ReceptionForm(Document):
                 )
 
 
-    def process_payments(self):
-        if self.payments:
-            for row in self.payments:
-                # Check if payment mode is bank-related and validate reference details
-                payment_type = frappe.get_value('Mode of Payment', row.mode_of_payment, 'type')
-                if payment_type == 'Bank':
-                    if not row.reference_no or not row.reference_date:
-                        frappe.throw(_('رقم المرجع وتاريخ المرجع إلزاميان للمعاملات المصرفية'))
-
-                payment_entry = frappe.get_doc({
-                    'doctype': 'Payment Entry',
-                    'payment_type': 'Receive',
-                    'mode_of_payment': row.mode_of_payment,
-                    'party_type': 'Customer',
-                    'party': self.customer,
-                    'paid_amount': row.amount,
-                    'received_amount': row.amount,
-                    'paid_to': get_default_paid_to_account(row.mode_of_payment),
-                    # Add reference details if it's a bank transaction
-                    'reference_no': row.reference_no if payment_type == 'Bank' else None,
-                    'reference_date': row.reference_date if payment_type == 'Bank' else None,
-                })
-                payment_entry.insert()
-                payment_entry.submit()
-        else:
-            frappe.throw(_('يرجى تحديد المدفوعات قبل تقديم الطلب.'))
-
+   
     def process_worker_commission(self):
         for worker_commission in self.worker_commission:
+            cost_center = frappe.db.get_value(
+                'Service', 
+                {'service_name': worker_commission.service_name}, 
+                'cost_center'
+            )
+            commission_account = frappe.db.get_value(
+                'Service', 
+                {'service_name': worker_commission.service_name}, 
+                'commission_account'
+            )
             existing_commission_payment = frappe.db.exists(
                 'Commission Payment', 
                 {
@@ -266,11 +336,11 @@ class ReceptionForm(Document):
                 commission_payment_doc.save()
 
             if worker_commission :
-                create_commission_journal_entry(commission_payment_doc, self.customer,worker_commission.worker, worker_commission.worker_salary , worker_commission.commission_account ,worker_commission.employee_account)
+                create_commission_journal_entry(commission_payment_doc, self.customer,worker_commission.worker, worker_commission.worker_salary , commission_account ,worker_commission.employee_account ,cost_center , self.name)
 
         frappe.msgprint('تمت معالجة مدفوعات العمولة بنجاح.')
 
-def create_commission_journal_entry(commission, customer ,worker , commission_amount ,commission_account ,employee_account):
+def create_commission_journal_entry(commission, customer ,worker , commission_amount ,commission_account ,employee_account ,cost_center, reception_form_name):
     # Create a Journal Entry to reflect the discount for each service
     je = frappe.get_doc({
         "doctype": "Journal Entry",
@@ -283,49 +353,52 @@ def create_commission_journal_entry(commission, customer ,worker , commission_am
                 "debit_in_account_currency": commission_amount,
                 "party_type": "Customer",
                 "party": customer,
+                'cost_center': cost_center,
             },
             {
                 "account": employee_account,  # Credit the Accounts Receivable account
                 "credit_in_account_currency": commission_amount,
                 "party_type": "Customer",
                 "party": customer,
+                'cost_center': cost_center,
             }
         ],
-        "user_remark": f"Commission of {commission_amount} applied for {worker} ",
+        "user_remark": f"تم تطبيق العمولة بمبلغ {commission_amount} للموظف {worker} في نموذج الاستقبال: {reception_form_name}",
     })
 
     # Insert and submit the Journal Entry
     je.insert()
     je.submit()
 
-def create_discount_journal_entry(sales_invoice, service_name, discount_amount , service_account ,discount_account):
+def create_discount_journal_entry(sales_invoice, discount_entries, reception_form_name):
+    """
+    Create a consolidated Journal Entry for all discounts applied in the Sales Invoice.
+    
+    Args:
+        sales_invoice: The Sales Invoice object.
+        discount_entries: A list of dictionaries, each containing service-specific discount details:
+            - discount_account
+            - debit_in_account_currency
+            - service_account
+            - credit_in_account_currency
+    """
+    if not discount_entries:
+        frappe.throw(_("لا توجد إدخالات خصم لمعالجتها."))
 
-    # Create a Journal Entry to reflect the discount for each service
+    # Create the Journal Entry
     je = frappe.get_doc({
         "doctype": "Journal Entry",
         "posting_date": sales_invoice.posting_date,
         "voucher_type": "Journal Entry",
         "company": sales_invoice.company,
-        "accounts": [
-            {
-                "account": discount_account,  # Debit the discount account
-                "debit_in_account_currency": discount_amount,
-                "party_type": "Customer",
-                "party": sales_invoice.customer,
-            },
-            {
-                "account": service_account,  # Credit the Accounts Receivable account
-                "credit_in_account_currency": discount_amount,
-                "party_type": "Customer",
-                "party": sales_invoice.customer,
-            }
-        ],
-        "user_remark": f"Discount of {discount_amount} applied for {service_name} in Sales Invoice: {sales_invoice.name}",
+        "accounts": discount_entries,
+        "user_remark": f"تم تطبيق الخصومات على فاتورة المبيعات: {sales_invoice.name} بواسطة استمارة الاستقبال: {reception_form_name}",
     })
 
     # Insert and submit the Journal Entry
     je.insert()
     je.submit()
+
 
 def get_default_paid_to_account(mode_of_payment):
     account = frappe.db.get_value('Mode of Payment Account', 
@@ -654,7 +727,7 @@ def check_slot_availability(service_name=None, worker=None, time=None, duration=
         # حساب التداخل والقدرة الاستيعابية
         current_overlapping = 0
         overlapping_info = []
-
+        current_service_time= ""
         # التحقق من التداخل في الحجوزات المتداخلة
         for booking in overlapping_bookings:
             service_time_parts = str(booking.service_time).split(':')
@@ -663,13 +736,20 @@ def check_slot_availability(service_name=None, worker=None, time=None, duration=
 
             # التحقق من التداخل
             if not (requested_end <= service_start or requested_start >= service_end):
+                overlapping_duration = service_end - service_start
                 if booking.service_name == service_name:
                     current_overlapping += 1
+                    current_service_time=booking.service_time
                 else:
                     # رفض الحجز إذا كانت الخدمة مختلفة
                     return {
                         "available": False,
-                        "error": f"هناك حجز متداخل لخدمة مختلفة في هذا الوقت. العميل: {booking.customer}, التاريخ: {booking.booking_date}"
+                        "error": (
+                            f"هناك حجز متداخل لخدمة  {booking.service_name} في هذا الوقت.  "
+                            f"العميل: {booking.customer}, التاريخ: {booking.booking_date}, "
+                            f"وقت الحجز: {booking.service_time} لمدة {overlapping_duration} دقيقة. "
+                            f"الرجاء اختيار وقت آخر."
+                        )
                     }
 
         # التحقق من التداخل في الاستقبال المتداخل
@@ -680,13 +760,20 @@ def check_slot_availability(service_name=None, worker=None, time=None, duration=
 
             # التحقق من التداخل
             if not (requested_end <= service_start or requested_start >= service_end):
+                overlapping_duration = service_end - service_start
                 if service.service_name == service_name:
                     current_overlapping += 1
+                    current_service_time=service.service_time
                 else:
                     # رفض الحجز إذا كانت الخدمة مختلفة
                     return {
                         "available": False,
-                        "error": f"هناك استقبال متداخل لخدمة مختلفة في هذا الوقت. العميل: {service.customer}, الهاتف: {service.customer}, التاريخ: {service.reception_date}"
+                         "error": (
+                            f"""هناك استقبال متداخل لهذا الموظف  بخدمة: {service.service_name}  في هذا الوقت. ,
+                            وقت الاستقبال: {service.service_time}, التاريخ: {service.reception_date},
+                            ومده هذا الخدمة: {overlapping_duration} دقيقة. 
+                            الرجاء اختيار وقت آخر. """
+                        )
                     }
 
         # جلب القدرة الاستيعابية للخدمة
@@ -699,7 +786,8 @@ def check_slot_availability(service_name=None, worker=None, time=None, duration=
         return {
             "available": is_available,
             "overlapping_count": current_overlapping,
-            "section_capacity": section_capacity
+            "section_capacity": section_capacity,
+            "current_service_time":current_service_time
         }
 
     except Exception as e:
