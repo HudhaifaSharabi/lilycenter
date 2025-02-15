@@ -9,7 +9,7 @@
    "label": "\u0627\u0644\u062d\u062c\u0648\u0632\u0627\u062a"
   }
  ],
- "content": "[{\"id\":\"XVwANXWLVc\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Lilycenter</span>\",\"col\":12}},{\"id\":\"MtCeNSryRw\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"\u0627\u0644\u0639\u0645\u0644\u0627\u0621\",\"col\":3}},{\"id\":\"ESm1jToaIN\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"\u0627\u0644\u0627\u0633\u062a\u0642\u0628\u0627\u0644\",\"col\":3}},{\"id\":\"WRam5YVR6s\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"\u0627\u0644\u0645\u0648\u0638\u0641\u064a\u0646\",\"col\":3}},{\"id\":\"FDIoumm_jf\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"\u0627\u0644\u062d\u062c\u0648\u0632\u0627\u062a\",\"col\":3}},{\"id\":\"2FWTROLTo3\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"XhsNfvcRyW\",\"type\":\"chart\",\"data\":{\"chart_name\":\"\u0627\u0644\u0627\u0633\u062a\u0642\u0628\u0627\u0644\",\"col\":6}},{\"id\":\"dp0zJiK5pC\",\"type\":\"chart\",\"data\":{\"chart_name\":\"\u0627\u0644\u062d\u062c\u0648\u0632\u0627\u062a\",\"col\":6}},{\"id\":\"imP5tRQkHe\",\"type\":\"card\",\"data\":{\"card_name\":\"\u0627\u0644\u0627\u0633\u062a\u0642\u0628\u0627\u0644\",\"col\":4}},{\"id\":\"tiXdphJmvu\",\"type\":\"card\",\"data\":{\"card_name\":\"\u0627\u0644\u0627\u062f\u0645\u0646\",\"col\":4}},{\"id\":\"ilUFE4GH7b\",\"type\":\"card\",\"data\":{\"card_name\":\"\u0627\u0644\u062a\u0642\u0627\u0631\u064a\u0631\",\"col\":4}}]",
+ "content": "[{\"id\":\"XVwANXWLVc\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Lilycenter</span>\",\"col\":12}},{\"id\":\"MtCeNSryRw\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"\u0627\u0644\u0639\u0645\u0644\u0627\u0621\",\"col\":3}},{\"id\":\"ESm1jToaIN\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"\u0627\u0644\u0627\u0633\u062a\u0642\u0628\u0627\u0644\",\"col\":3}},{\"id\":\"WRam5YVR6s\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"\u0627\u0644\u0645\u0648\u0638\u0641\u064a\u0646\",\"col\":3}},{\"id\":\"FDIoumm_jf\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"\u0627\u0644\u062d\u062c\u0648\u0632\u0627\u062a\",\"col\":3}},{\"id\":\"2FWTROLTo3\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"XhsNfvcRyW\",\"type\":\"chart\",\"data\":{\"chart_name\":\"\u0627\u0644\u0627\u0633\u062a\u0642\u0628\u0627\u0644\",\"col\":6}},{\"id\":\"dp0zJiK5pC\",\"type\":\"chart\",\"data\":{\"chart_name\":\"\u0627\u0644\u062d\u062c\u0648\u0632\u0627\u062a\",\"col\":6}},{\"id\":\"imP5tRQkHe\",\"type\":\"card\",\"data\":{\"card_name\":\"\u0627\u0644\u0627\u0633\u062a\u0642\u0628\u0627\u0644\",\"col\":4}},{\"id\":\"tiXdphJmvu\",\"type\":\"card\",\"data\":{\"card_name\":\"\u0627\u0644\u0627\u062f\u0645\u0646\",\"col\":4}},{\"id\":\"RPzonMW4EK\",\"type\":\"card\",\"data\":{\"card_name\":\"\u0627\u0639\u062f\u0627\u062f\u0627\u062a\",\"col\":4}}]",
  "creation": "2024-09-19 14:50:36.869624",
  "custom_blocks": [],
  "docstatus": 0,
@@ -54,28 +54,8 @@
   {
    "hidden": 0,
    "is_query_report": 0,
-   "label": "\u0627\u0644\u062a\u0642\u0627\u0631\u064a\u0631",
-   "link_count": 1,
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Card Break"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Reception Report",
-   "link_count": 0,
-   "link_to": "Reception Report",
-   "link_type": "Report",
-   "onboard": 0,
-   "report_ref_doctype": "Reception Form",
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
    "label": "\u0627\u0644\u0627\u062f\u0645\u0646",
-   "link_count": 6,
+   "link_count": 1,
    "link_type": "DocType",
    "onboard": 0,
    "type": "Card Break"
@@ -140,9 +120,38 @@
    "link_type": "DocType",
    "onboard": 0,
    "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "\u0627\u0639\u062f\u0627\u062f\u0627\u062a",
+   "link_count": 0,
+   "link_to": "Lilycenter Setting",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "\u0627\u0639\u062f\u0627\u062f\u0627\u062a",
+   "link_count": 1,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "\u0627\u0639\u062f\u0627\u062f\u0627\u062a",
+   "link_count": 0,
+   "link_to": "Lilycenter Setting",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
   }
  ],
- "modified": "2024-12-03 05:19:38.356608",
+ "modified": "2025-01-28 04:07:08.926205",
  "modified_by": "Administrator",
  "module": "Lilycenter",
  "name": "Lilycenter",
