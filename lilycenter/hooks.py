@@ -7,6 +7,7 @@ app_license = "mit"
 # app_include_css = "/assets/lilycenter/css/custom_theme.css"
 
 # required_apps = []
+app_include_css = "/assets/lilycenter/css/custom_theme.css"
 
 # Includes in <head>
 # ------------------
