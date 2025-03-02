@@ -1,5 +1,6 @@
 {
  "actions": [],
+ "allow_import": 1,
  "allow_rename": 1,
  "autoname": "field:service_name",
  "creation": "2024-09-10 21:08:56.458728",
@@ -8,9 +9,10 @@
  "field_order": [
   "\u0627\u0644\u062e\u062f\u0645\u0629_section",
   "service_name",
+  "status",
+  "naming_series",
   "column_break_uxqq",
   "category",
-  "naming_series",
   "section_break_tuqk",
   "table_material",
   "account_section",
@@ -105,11 +107,22 @@
    "label": "\u0645\u0631\u0643\u0632 \u0627\u0644\u062a\u0643\u0644\u0641\u0647",
    "options": "Cost Center",
    "reqd": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_filter": 1,
+   "in_list_view": 1,
+   "in_preview": 1,
+   "in_standard_filter": 1,
+   "label": "\u0627\u0644\u062d\u0627\u0644\u0629",
+   "options": "\u0646\u0634\u0637\n\u0645\u0644\u063a\u064a",
+   "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-01-23 20:47:28.110951",
+ "modified": "2025-02-14 05:06:45.866997",
  "modified_by": "Administrator",
  "module": "Lilycenter",
  "name": "Service",
@@ -156,5 +169,6 @@
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
- "title_field": "service_name"
+ "title_field": "service_name",
+ "track_changes": 1
 }

@@ -52,7 +52,14 @@ frappe.ui.form.on("Booking", {
                 }
             };
         });
-
+        frm.fields_dict['services'].grid.get_field('service_name').get_query = function(doc, cdt, cdn) {
+            return {
+                filters: {
+                    'status': 'نشط'
+                }
+            };
+        };
+        frm.fi
         frm.fields_dict['services'].grid.get_field('worker').get_query = function(doc, cdt, cdn) {
             let row = locals[cdt][cdn];
             return {
@@ -94,7 +101,6 @@ frappe.ui.form.on("Booking", {
         });
 
       
-
         let child_table = frm.doc.services || [];
         let validation_errors = false;
 
@@ -147,7 +153,8 @@ frappe.ui.form.on("Booking", {
                     worker: current_row.worker,
                     time: current_row.time,
                     duration: duration,
-                    date:frm.doc.booking_date
+                    date:frm.doc.booking_date,
+                    exclude_document: frm.doc.name
                 },
                 async: false, // Ensure synchronous behavior before save
                 callback: function (r) {
@@ -185,7 +192,7 @@ frappe.ui.form.on("Booking", {
             return;
         }
 
-        // Perform server-side validation for additional checks
+       
         
     },
 
@@ -206,6 +213,8 @@ frappe.ui.form.on('Reception Service', {
             frappe.model.set_value(cdt, cdn, 'worker', null);
             frappe.model.set_value(cdt, cdn, 'discount', null);
             frappe.model.set_value(cdt, cdn, 'discount_rate', null);
+            frappe.model.set_value(cdt, cdn, 'discount_amount', null);
+
             frappe.model.set_value(cdt, cdn, 'time', null);
             frappe.model.set_value(cdt, cdn, 'section_capacity', null);
             frappe.model.set_value(cdt, cdn, 'section_capacity', null);
@@ -227,6 +236,7 @@ frappe.ui.form.on('Reception Service', {
                     }
                 });
             }
+        
        
     },
 
@@ -234,69 +244,38 @@ frappe.ui.form.on('Reception Service', {
         let row = locals[cdt][cdn];
 
             frappe.model.set_value(cdt, cdn, 'employee_account', null);
-            frappe.model.set_value(cdt, cdn, 'discount', null);
-            frappe.model.set_value(cdt, cdn, 'discount_rate', null);
             frappe.model.set_value(cdt, cdn, 'time', null);
             frappe.model.set_value(cdt, cdn, 'section_capacity', null);
             frappe.model.set_value(cdt, cdn, 'section_capacity', null);
             frappe.model.set_value(cdt, cdn, 'duration', null);
 
-            if (row.worker && row.service_name) {
-                // Fetch capacity and duration based on service and worker
-                frappe.call({
-                    method: 'frappe.client.get_value',
-                    args: {
-                        doctype: 'Worker Commission',
-                        filters: { 
-                            service_name: row.service_name,
-                            worker: row.worker,
-                            // time_check: 1 // Ensure the value is explicitly checked for true
-                        },
-                        // fieldname: ['section_capacity', 'duration', 'time_check']
-                        fieldname: ['section_capacity', 'duration']
+        if (row.worker && row.service_name) {
+            // استدعاء القدرة الاستيعابية والفترة بناءً على الخدمة والموظف
+            frappe.call({
+                method: 'frappe.client.get_value',
+                args: {
+                    doctype: 'Worker Commission',
+                    filters: { service_name: row.service_name ,worker: row.worker },
+                    fieldname: ['section_capacity', 'duration']
+                },
+                callback: function(r) {
+                    if (r.message) {
+                        let section_capacity = r.message.section_capacity || 0;
+                        let duration = r.message.duration || 60; // قيمة افتراضية إذا لم تكن موجودة
 
-                    },
-                    callback: function(r) {
-                        if (r.message) {
-                            let section_capacity = r.message.section_capacity || null;
-                            let duration = r.message.duration || null;
-                            let time_check = r.message.time_check || 0;
-            
-                            // Update fields in the current row
-                            frappe.model.set_value(cdt, cdn, 'section_capacity', section_capacity);
-                            frappe.model.set_value(cdt, cdn, 'duration', duration);
-                            // frappe.model.set_value(cdt, cdn, 'time_check', !!time_check);
-            
-                            // Notify user if time_check is true
-                            // if (time_check) {
-                            //     frappe.msgprint({
-                            //         title: __('Success'),
-                            //         message: __('Data loaded successfully.'),
-                            //         indicator: 'green'
-                            //     });
-                            // } else {
-                            //     frappe.msgprint({
-                            //         title: __('No Data Found'),
-                            //         message: __('The time_check condition is not met.'),
-                            //         indicator: 'red'
-                            //     });
-                            // }
-                        } else {
-                            frappe.model.set_value(cdt, cdn, 'section_capacity', null);
-                            frappe.model.set_value(cdt, cdn, 'duration', null);
-                            // frappe.model.set_value(cdt, cdn, 'time_check', false);
-                        }
+                        // تحديث الحقول في السطر الحالي
+                        frappe.model.set_value(cdt, cdn, 'section_capacity', section_capacity);
+                        frappe.model.set_value(cdt, cdn, 'duration', duration);
                     }
-                });
-            } else {
-                // Clear fields if data is incomplete
-                frappe.model.set_value(cdt, cdn, 'section_capacity', null);
-                frappe.model.set_value(cdt, cdn, 'duration', null);
-                // frappe.model.set_value(cdt, cdn, 'time_check', false);
-            }
+                }
+            });
+        } else {
+            // إذا لم تكن البيانات مكتملة
+            frappe.model.set_value(cdt, cdn, 'section_capacity', null);
+            frappe.model.set_value(cdt, cdn, 'duration', null);
+        }
     },
     time: function (frm, cdt, cdn) {
-        // if (!current_row.time_check) {
         let current_row = locals[cdt][cdn];
 
         if (!current_row.time || !current_row.worker || !current_row.service_name || !current_row.duration) {
@@ -394,7 +373,8 @@ frappe.ui.form.on('Reception Service', {
                 worker: current_row.worker,
                 time: current_row.time,
                 duration: duration,
-                date:frm.doc.booking_date
+                date:frm.doc.booking_date,
+                exclude_document: frm.doc.name
             },
             callback: function (r) {
                 if (r.message) {
@@ -417,7 +397,7 @@ frappe.ui.form.on('Reception Service', {
                         frappe.model.set_value(cdt, cdn, 'time', '');
                     } else {
                         frappe.show_alert({
-                            message: __('تم حجز الموعد بنجاح.'),
+                            message: __('الموعد متاح'),
                             indicator: 'green'
                         });
                     }
@@ -425,7 +405,10 @@ frappe.ui.form.on('Reception Service', {
             }
         });
     },
-    
+    discount: function(frm, cdt, cdn) {
+        let row = locals[cdt][cdn];
+        calculate_total(frm);
+    },
     price: function(frm, cdt, cdn) {
         let row = locals[cdt][cdn];
         
@@ -434,7 +417,14 @@ frappe.ui.form.on('Reception Service', {
 
     discount_percentage: function(frm, cdt, cdn) {
         calculate_total(frm);
-    }
+    },
+
+    services_add: function(frm) {
+        calculate_total(frm);
+    },
+    services_remove: function(frm) {
+        calculate_total(frm); // Recalculate the total payment
+    },
 });
 
 frappe.ui.form.on('Reception Payments', {

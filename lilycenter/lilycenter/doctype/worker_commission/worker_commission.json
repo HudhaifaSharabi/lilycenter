@@ -1,5 +1,6 @@
 {
  "actions": [],
+ "allow_import": 1,
  "allow_rename": 1,
  "autoname": "naming_series:",
  "creation": "2024-09-22 20:03:46.806335",
@@ -13,7 +14,6 @@
   "section_break_xqbi",
   "service_name",
   "column_break_ddct",
-  "time_check",
   "section_break_vwwx",
   "duration",
   "column_break_tpra",
@@ -93,13 +93,6 @@
    "fieldtype": "Column Break"
   },
   {
-   "default": "0",
-   "fieldname": "time_check",
-   "fieldtype": "Check",
-   "label": "Time Check"
-  },
-  {
-   "depends_on": "eval: doc.time_check",
    "fieldname": "section_break_vwwx",
    "fieldtype": "Section Break"
   },
@@ -110,7 +103,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-01-17 16:40:58.494155",
+ "modified": "2025-02-14 03:11:16.764338",
  "modified_by": "Administrator",
  "module": "Lilycenter",
  "name": "Worker Commission",

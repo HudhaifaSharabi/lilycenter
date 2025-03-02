@@ -1,5 +1,6 @@
 {
  "actions": [],
+ "allow_import": 1,
  "allow_rename": 1,
  "autoname": "naming_series:",
  "creation": "2024-10-14 01:39:06.151991",
@@ -9,7 +10,10 @@
   "naming_series",
   "discount_name",
   "service",
+  "type_of_discount",
+  "column_break_saqu",
   "discount_rate",
+  "discount_amount",
   "statues"
  ],
  "fields": [
@@ -36,11 +40,12 @@
    "reqd": 1
   },
   {
+   "depends_on": "eval: doc.type_of_discount == '\u0646\u0633\u0628\u0629'",
    "fieldname": "discount_rate",
    "fieldtype": "Float",
    "label": "\u0646\u0633\u0628\u0629 \u0627\u0644\u062e\u0635\u0645",
-   "non_negative": 1,
-   "reqd": 1
+   "mandatory_depends_on": "eval: doc.type_of_discount == '\u0646\u0633\u0628\u0629'",
+   "non_negative": 1
   },
   {
    "fieldname": "statues",
@@ -48,11 +53,30 @@
    "label": "Statues",
    "options": "\nActive\nunActive",
    "reqd": 1
+  },
+  {
+   "fieldname": "column_break_saqu",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "type_of_discount",
+   "fieldtype": "Select",
+   "label": "\u0646\u0648\u0639 \u0627\u0644\u062e\u0635\u0645",
+   "options": "\u0646\u0633\u0628\u0629\n\u0645\u0628\u0644\u063a",
+   "reqd": 1
+  },
+  {
+   "depends_on": "eval: doc.type_of_discount == '\u0645\u0628\u0644\u063a'",
+   "fieldname": "discount_amount",
+   "fieldtype": "Currency",
+   "label": "\u0645\u0628\u0644\u063a \u0627\u0644\u062e\u0635\u0645",
+   "mandatory_depends_on": "eval: doc.type_of_discount == '\u0645\u0628\u0644\u063a'",
+   "non_negative": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-10-14 01:55:42.107319",
+ "modified": "2025-02-14 05:34:10.335386",
  "modified_by": "Administrator",
  "module": "Lilycenter",
  "name": "Service Discount",

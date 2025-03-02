@@ -102,6 +102,7 @@ function render_booking_results(dialog, frm, bookings) {
                                         row.worker = service.worker;
                                         row.discount = service.discount;
                                         row.discount_rate = service.discount_rate;
+                                        row.discount_amount = service.discount_amount;
                                         row.income_account = service.income_account;
                                         row.discount_account = service.discount_account;
                                         row.section_capacity = service.section_capacity;
@@ -150,105 +151,136 @@ function render_booking_results(dialog, frm, bookings) {
 frappe.ui.form.on("Reception Form", {
     
     refresh(frm) {
-// زر عرض الحجوزات بناءً على التاريخ
-frm.add_custom_button(__('عرض الحجوزات حسب التاريخ'), function() {
-    // إنشاء نافذة لإدخال التاريخ
-    frappe.prompt(
-        [
-            {
-                label: 'اختر التاريخ',
-                fieldname: 'booking_date',
-                fieldtype: 'Date',
-                reqd: 1
-            }
-        ],
-        function(values) {
-            // استدعاء الميثود لعرض الحجوزات بناءً على التاريخ المدخل
-            frm.call({
-                method: 'lilycenter.lilycenter.doctype.booking.booking.get_bookings_by_date',
-                args: {
-                    date: values.booking_date
-                },
-                callback: function(r) {
-                    if (r.message) {
-                        // Extract all categories from the response columns (excluding 'time_range')
-                        let categories = r.message.columns.filter(column => column.fieldname !== 'time_range');
 
-                        // Initialize time slots (00:00 - 23:00)
-                        let timeSlots = [];
-                        for (let i = 0; i < 24; i++) {
-                            let startTime = (i < 10 ? '0' : '') + i + ':00';
-                            let endTime = (i + 1 < 10 ? '0' : '') + (i + 1) + ':00';
-                            timeSlots.push(startTime + ' - ' + endTime);
-                        }
+        
+        // زر عرض الحجوزات بناءً على التاريخ
+        frm.add_custom_button(__('عرض الحجوزات حسب التاريخ'), function() {
+            // إنشاء نافذة لإدخال التاريخ
+            frappe.prompt(
+                [
+                    {
+                        label: 'اختر التاريخ',
+                        fieldname: 'booking_date',
+                        fieldtype: 'Date',
+                        reqd: 1
+                    }
+                ],
+                function(values) {
+                    // استدعاء الميثود لعرض الحجوزات بناءً على التاريخ المدخل
+                    frm.call({
+                        method: 'lilycenter.lilycenter.doctype.booking.booking.get_bookings_by_date',
+                        args: {
+                            date: values.booking_date
+                        },
+                        callback: function(r) {
+                            if (r.message) {
+                                // Extract all categories from the response columns (excluding 'time_range')
+                                let categories = r.message.columns.filter(column => column.fieldname !== 'time_range');
 
-                        // Create HTML for the table
-                        let html = '<table class="table table-bordered">';
-                        
-                        // Create table header (time + categories)
-                        html += '<thead><tr><th>الوقت</th>';
-                        categories.forEach(category => {
-                            html += `<th>${category.label}</th>`;
-                        });
-                        html += '</tr></thead><tbody>';
+                                // Initialize time slots (00:00 - 23:00)
+                                let timeSlots = [];
+                                for (let i = 0; i < 24; i++) {
+                                    let startTime = (i < 10 ? '0' : '') + i + ':00';
+                                    let endTime = (i + 1 < 10 ? '0' : '') + (i + 1) + ':00';
+                                    timeSlots.push(startTime + ' - ' + endTime);
+                                }
 
-                        // Create rows for each time slot
-                        timeSlots.forEach(timeSlot => {
-                            html += `<tr><td>${timeSlot}</td>`;
+                                // Create HTML for the table
+                                let html = '<table class="table table-bordered">';
+                                
+                                // Create table header (time + categories)
+                                html += '<thead><tr><th>الوقت</th>';
+                                categories.forEach(category => {
+                                    html += `<th>${category.label}</th>`;
+                                });
+                                html += '</tr></thead><tbody>';
 
-                            // Initialize a flag for each category
-                            categories.forEach(category => {
-                                let bookingFound = false;
-                                let bookingDetails = [];
+                                // Create rows for each time slot
+                                timeSlots.forEach(timeSlot => {
+                                    // Row for bookings
+                                    html += `<tr><td rowspan="2" >${timeSlot}</td>`;
+                                    categories.forEach(category => {
+                                        let bookingFound = false;
+                                        let bookingDetails = [];
 
-                                // Loop through the bookings for the current time slot and category
-                                r.message.data.forEach(booking => {
-                                    if (booking.time_range === timeSlot && booking.category === category.label) {
-                                        // Collect customer, service, and worker name for display
-                                        bookingDetails.push(`
-                                            العميل: ${booking.customer} <br>
-                                            الخدمة: ${booking.service_name} <br>
-                                            الموظف: ${booking.worker_name}
-                                        `);
-                                        bookingFound = true;
-                                    }
+                                        // Loop through the bookings for the current time slot and category
+                                        r.message.data.forEach(booking => {
+                                            if (booking.time_range === timeSlot && booking.category === category.label) {
+                                                // Collect customer, service, and worker name for display
+                                                bookingDetails.push(`
+                                                    العميل: ${booking.customer} <br>
+                                                    الخدمة: ${booking.service_name} <br>
+                                                    الموظف: ${booking.worker_name}
+                                                    <br>...............................................<br>
+
+                                                `);
+                                                bookingFound = true;
+                                            }
+                                        });
+
+                                        // If there are bookings, display them in the same cell
+                                        if (bookingFound) {
+                                            html += `<td>${bookingDetails.join('<br>')}</td>`;
+                                        } else {
+                                            // If no booking, display "No booking"
+                                            html += '<td>لايوجد حجز</td>';
+                                        }
+                                    });
+                                    html += '</tr>';
+
+                                    // Row for reception
+                                    categories.forEach(category => {
+                                        let receptionFound = false;
+                                        let receptionDetails = [];
+
+                                        // Loop through the receptions for the current time slot and category
+                                        r.message.receptions.forEach(reception => {
+                                            if (reception.time_range === timeSlot && reception.category === category.label) {
+                                                // Collect reception details for display
+                                                receptionDetails.push(`
+                                                   العميل: ${reception.customer} <br>
+                                                    الخدمة: ${reception.service_name} <br>
+                                                    الموظف: ${reception.worker_name}
+                                                     <br>...............................................<br>
+                                                `);
+                                                receptionFound = true;
+                                            }
+                                        });
+
+                                        // If there are receptions, display them in the same cell
+                                        if (receptionFound) {
+                                            html += `<td>${receptionDetails.join('<br>')}</td>`;
+                                        } else {
+                                            // If no reception, display "No reception"
+                                            html += '<td>لايوجد استقبال</td>';
+                                        }
+                                    });
+                                    html += '</tr>';
                                 });
 
-                                // If there are bookings, display them in the same cell
-                                if (bookingFound) {
-                                    html += `<td>${bookingDetails.join('<br>')}</td>`;
-                                } else {
-                                    // If no booking, display "No booking"
-                                    html += '<td>لايوجد حجز</td>';
-                                }
-                            });
-
-                            html += '</tr>';
-                        });
-
-                        html += '</tbody></table>';
-                        
-                        // Show the generated table in a dialog
-                        frappe.msgprint({
-                            title: __('حجوزات يوم: ') + values.booking_date,
-                            message: html,
-                            indicator: 'green',
-                            wide: true
-                        });
-                    } else {
-                        frappe.msgprint({
-                            title: __('لا توجد حجوزات'),
-                            message: __('لا توجد حجوزات في التاريخ المدخل.'),
-                            indicator: 'red'
-                        });
-                    }
-                }
-            });
-        },
-        __('اختر التاريخ'),
-        __('عرض')
-    );
-});
+                                html += '</tbody></table>';
+                                
+                                // Show the generated table in a dialog
+                                frappe.msgprint({
+                                    title: __('حجوزات يوم: ') + values.booking_date,
+                                    message: html,
+                                    indicator: 'green',
+                                    wide: true
+                                });
+                            } else {
+                                frappe.msgprint({
+                                    title: __('لا توجد حجوزات'),
+                                    message: __('لا توجد حجوزات في التاريخ المدخل.'),
+                                    indicator: 'red'
+                                });
+                            }
+                        }
+                    });
+                },
+                __('اختر التاريخ'),
+                __('عرض')
+            );
+        });
 
 
 
@@ -290,7 +322,13 @@ frm.add_custom_button(__('عرض الحجوزات حسب التاريخ'), funct
             }
         };
     });
-
+    frm.fields_dict['services'].grid.get_field('service_name').get_query = function(doc, cdt, cdn) {
+        return {
+            filters: {
+                'status': 'نشط'
+            }
+        };
+    };
     frm.fields_dict['services'].grid.get_field('worker').get_query = function(doc, cdt, cdn) {
         let row = locals[cdt][cdn];
         return {
@@ -426,7 +464,8 @@ frm.add_custom_button(__('عرض الحجوزات حسب التاريخ'), funct
                     worker: current_row.worker,
                     time: current_row.time,
                     duration: duration,
-                    date:frm.doc.date
+                    date:frm.doc.date,
+                    exclude_document: frm.doc.name
                 },
                 async: false, // Ensure synchronous behavior before save
                 callback: function (r) {
@@ -577,7 +616,14 @@ frm.add_custom_button(__('عرض الحجوزات حسب التاريخ'), funct
         // Check payment validation for "أجل" status
         let total = 0;
         frm.doc.services.forEach(service => {
-            let service_discount = service.discount_rate ? (service.price * service.discount_rate / 100) : 0;
+            let service_discount = 0
+            if (service.type_of_discount == "نسبة" && service.discount_rate  > 0) {
+                 service_discount =service.price * service.discount_rate / 100
+            }
+            else if(service.type_of_discount == "مبلغ" && service.discount_amount  > 0){
+                 service_discount = service.discount_amount 
+            }
+
             let amount = service.price - service_discount;
             total += amount;
         });
@@ -668,6 +714,7 @@ frm.add_custom_button(__('عرض الحجوزات حسب التاريخ'), funct
             let total = frm.doc.total || 0;
             let total_payments = (frm.doc.total_payment || 0);
             let total_booking_payments = (frm.doc.total_booking_payments || 0);
+            
             let grand_total_payments = total_payments + total_booking_payments;
             
             if (grand_total_payments >= total) {
@@ -696,6 +743,8 @@ frappe.ui.form.on('Reception Service', {
             frappe.model.set_value(cdt, cdn, 'worker', null);
             frappe.model.set_value(cdt, cdn, 'discount', null);
             frappe.model.set_value(cdt, cdn, 'discount_rate', null);
+            frappe.model.set_value(cdt, cdn, 'discount_amount', null);
+
             frappe.model.set_value(cdt, cdn, 'time', null);
             frappe.model.set_value(cdt, cdn, 'section_capacity', null);
             frappe.model.set_value(cdt, cdn, 'section_capacity', null);
@@ -854,7 +903,8 @@ frappe.ui.form.on('Reception Service', {
                 worker: current_row.worker,
                 time: current_row.time,
                 duration: duration,
-                date:frm.doc.date
+                date:frm.doc.date,
+                exclude_document: frm.doc.name
             },
             callback: function (r) {
                 if (r.message) {
@@ -877,7 +927,7 @@ frappe.ui.form.on('Reception Service', {
                         frappe.model.set_value(cdt, cdn, 'time', '');
                     } else {
                         frappe.show_alert({
-                            message: __('تم حجز الموعد بنجاح.'),
+                            message: __('الموعد متاح'),
                             indicator: 'green'
                         });
                     }
@@ -949,8 +999,12 @@ function calculate_total(frm) {
     if (frm.doc.services && frm.doc.services.length) {
         frm.doc.services.forEach(function(row) {
             let service_discount = 0;
-            if (row.discount_rate > 0) {
+            
+            if (row.type_of_discount == "نسبة" && row.discount_rate > 0) {
                 service_discount = row.price * (row.discount_rate / 100);
+            }
+            else if (row.type_of_discount == "مبلغ" ) {
+                service_discount = row.discount_amount;
             }
             let amount = row.price - service_discount;
             total += amount || 0;

@@ -35,7 +35,12 @@ class ReceptionForm(Document):
         # Calculate total from services
         total = 0
         for service in self.services:
-            service_discount = service.price * (service.discount_rate / 100) if service.discount_rate else 0
+            service_discount = 0
+            if service.type_of_discount == "نسبة" and service.discount_rate > 0:
+                service_discount = service.price * (service.discount_rate / 100)
+            
+            elif service.type_of_discount == "مبلغ":
+                service_discount = service.discount_amount
             amount = service.price - service_discount
             total += amount
 
@@ -124,7 +129,6 @@ class ReceptionForm(Document):
             })
             stock_entry.insert()
             stock_entry.submit()
-
     def create_sales_invoice(self):
         """
         Create a Sales Invoice and handle discounts for services.
@@ -139,8 +143,13 @@ class ReceptionForm(Document):
             if not price_list_rate:
                 frappe.throw(_("لا يوجد سعر محدد للخدمة {0}").format(service.service_name))
 
-            # Calculate discount and net amount
-            service_discount = price_list_rate * (service.discount_rate / 100) if service.discount_rate else 0
+            # تحديد نوع الخصم وحسابه
+            service_discount = 0
+            if service.type_of_discount == "نسبة" and service.discount_rate > 0:
+                service_discount = price_list_rate * (service.discount_rate / 100)
+            elif service.type_of_discount == "مبلغ":
+                service_discount = service.discount_amount
+
             net_amount = price_list_rate - service_discount
 
             # Fetch necessary account details
@@ -198,9 +207,11 @@ class ReceptionForm(Document):
 
         # Create a Journal Entry for the discounts if applicable
         if discount_entries:
-            create_discount_journal_entry(sales_invoice, discount_entries, self.name)   
+            create_discount_journal_entry(sales_invoice, discount_entries, self.name)
+
         # Process payments for the created Sales Invoice
         self.process_payments(sales_invoice.name)
+
     def process_payments(self, sales_invoice_name):
         cost_center = frappe.db.get_single_value('Lilycenter Setting', 'cost_center')
         if not self.payments:
@@ -260,7 +271,12 @@ class ReceptionForm(Document):
             
         total = 0
         for service in self.services:
-            service_discount = service.price * (service.discount_rate / 100) if service.discount_rate else 0
+            service_discount = 0
+            if service.type_of_discount == "نسبة" and service.discount_rate > 0:
+                service_discount = service.price * (service.discount_rate / 100)
+            
+            elif service.type_of_discount == "مبلغ":
+                service_discount = service.discount_amount
             amount = service.price - service_discount
             total += amount
 
@@ -647,7 +663,7 @@ def get_booking_details(booking_id):
         return len(overlapping_services) < section_capacity
 
 @frappe.whitelist()
-def check_slot_availability(service_name=None, worker=None, time=None, duration=None, date=None):
+def check_slot_availability(service_name=None, worker=None, time=None, duration=None, date=None, exclude_document=None):
     """التحقق من توفر الموعد مع القدرة الاستيعابية وإظهار اسم العميل والتاريخ ورقم الهاتف في رسالة الخطأ"""
     try:
         try:
@@ -692,10 +708,12 @@ def check_slot_availability(service_name=None, worker=None, time=None, duration=
             WHERE b.docstatus < 2
                 AND rs.worker = %(worker)s
                 AND DATE(b.booking_date ) = %(date)s
+                AND b.name != %(exclude_document)s 
                 AND b.booking_status != 'ملغي'
         """, {
             'worker': worker,
-            'date': date
+            'date': date,
+            'exclude_document':exclude_document
         }, as_dict=True)
 
         # استعلام للحصول على الحجوزات المتداخلة من جدول "الاستقبال"
@@ -719,9 +737,13 @@ def check_slot_availability(service_name=None, worker=None, time=None, duration=
             WHERE rf.docstatus < 2
                 AND rs.worker = %(worker)s
                 AND DATE(rf.date ) = %(date)s
+                AND rf.name != %(exclude_document)s
+
         """, {
             'worker': worker,
-            'date': date
+            'date': date,
+            'exclude_document':exclude_document
+
         }, as_dict=True)
 
         # حساب التداخل والقدرة الاستيعابية
@@ -807,7 +829,12 @@ def check_slot_availability(service_name=None, worker=None, time=None, duration=
         
         total = 0
         for service in self.services:
-            service_discount = service.price * (service.discount_rate / 100) if service.discount_rate else 0
+            service_discount = 0
+            if service.type_of_discount == "نسبة" and service.discount_rate > 0:
+                service_discount = service.price * (service.discount_rate / 100)
+            
+            elif service.type_of_discount == "مبلغ":
+                service_discount = service.discount_amount
             amount = service.price - service_discount
             total += amount
 

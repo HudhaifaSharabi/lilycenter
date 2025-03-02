@@ -85,6 +85,22 @@ def get_bookings_by_date(date=None):
         ORDER BY rs.time ASC
     """, {"date": date}, as_dict=True)
 
+
+    # Fetch Reception Form Form from the database
+    receptions = frappe.db.sql("""
+        SELECT 
+            rs.time AS service_time,
+            i.item_group AS category,
+            b.customer,
+            (SELECT employee_name FROM `tabEmployee` WHERE name = rs.worker) AS worker_name,
+            rs.service_name
+        FROM `tabReception Form` b
+        JOIN `tabReception Service` rs ON rs.parent = b.name
+        JOIN `tabItem` i ON i.name = rs.service_name
+        WHERE b.date = %(date)s
+        ORDER BY rs.time ASC
+    """, {"date": date}, as_dict=True)
+
     # Fetch all categories in the "Beauty" group (whether or not they have bookings)
     categories = frappe.db.sql("""
         SELECT name, parent_item_group 
@@ -102,6 +118,9 @@ def get_bookings_by_date(date=None):
         time_slots[time_range] = []  # Initialize an empty list for each time range
         current_time += timedelta(hours=1)
 
+        
+    booking_time_slots = {f"{hour:02d}:00 - {hour+1:02d}:00": [] for hour in range(24)}
+    reception_time_slots = {f"{hour:02d}:00 - {hour+1:02d}:00": [] for hour in range(24)}
     # Organize bookings by time slot
     for booking in bookings:
         service_time = booking["service_time"]
@@ -112,25 +131,158 @@ def get_bookings_by_date(date=None):
         end_time = start_of_hour + timedelta(hours=1)
         time_range = f"{start_of_hour.strftime('%H:%M')} - {end_time.strftime('%H:%M')}"
 
-        time_slots[time_range].append({
+        booking_time_slots[time_range].append({
             "category": booking["category"],
             "customer": booking["customer"],
             "worker_name": booking["worker_name"],
             "service_name": booking["service_name"]
         })
 
+    for reception in receptions:
+        service_time = reception["service_time"]
+        if isinstance(service_time, timedelta):
+            service_time = (datetime.min + service_time).time()
+
+        start_of_hour = datetime.combine(datetime.min, service_time).replace(minute=0, second=0, microsecond=0)
+        end_time = start_of_hour + timedelta(hours=1)
+        time_range = f"{start_of_hour.strftime('%H:%M')} - {end_time.strftime('%H:%M')}"
+
+        reception_time_slots[time_range].append({
+            "category": reception["category"],
+            "customer": reception["customer"],
+            "worker_name": reception["worker_name"],
+            "service_name": reception["service_name"]
+        })
+
+
+
+        
+
     # Return all the necessary columns and data
     return {
-        "columns": [{"label": "الوقت", "fieldname": "time_range", "fieldtype": "Data", "width": 150}] +
-                   [{"label": category["name"], "fieldname": category["name"], "fieldtype": "Data", "width": 150} for category in categories],
-        "data": [ {
-            "time_range": time_range,
-            "category": booking["category"],
-            "customer": booking["customer"],
-            "worker_name": booking["worker_name"],
-            "service_name": booking["service_name"]
-        } for time_range, bookings in time_slots.items() for booking in bookings]
-    }
+    "columns": [{"label": "الوقت", "fieldname": "time_range", "fieldtype": "Data", "width": 150}] +
+               [{"label": category["name"], "fieldname": category["name"], "fieldtype": "Data", "width": 150} for category in categories],
+    
+    "data": [ {
+        "time_range": time_range,
+        "category": booking["category"],
+        "customer": booking["customer"],
+        "worker_name": booking["worker_name"],
+        "service_name": booking["service_name"]
+    } for time_range, bookings in booking_time_slots.items() for booking in bookings],
+
+    "receptions": [ {
+        "time_range": time_range,
+        "category": reception["category"],
+        "customer": reception["customer"],
+        "worker_name": reception["worker_name"],
+        "service_name": reception["service_name"]
+    } for time_range, receptions in reception_time_slots.items() for reception in receptions]
+}
+
+
+# def get_bookings_by_date(date=None):
+#     if not date:
+#         date = frappe.utils.nowdate()  # Default to today's date if not provided
+
+#     # Fetch bookings
+#     bookings = frappe.db.sql("""
+#         SELECT 
+#             rs.time AS service_time,
+#             i.item_group AS category,
+#             b.customer,
+#             (SELECT employee_name FROM `tabEmployee` WHERE name = rs.worker) AS worker_name,
+#             rs.service_name
+#         FROM `tabBooking` b
+#         JOIN `tabReception Service` rs ON rs.parent = b.name
+#         JOIN `tabItem` i ON i.name = rs.service_name
+#         WHERE b.booking_date = %(date)s
+#         AND b.booking_status != 'ملغي'
+#         ORDER BY rs.time ASC
+#     """, {"date": date}, as_dict=True)
+
+#     # Fetch reception data
+#     receptions = frappe.db.sql("""
+#         SELECT 
+#             rs.time AS reception_time,
+#             i.item_group AS category,
+#             re.customer,
+#             (SELECT employee_name FROM `tabEmployee` WHERE name = rs.worker) AS worker_name,
+#             rs.service_name
+#         FROM `tabReception Form` re
+#         JOIN `tabReception Service` rs ON rs.parent = re.name
+#         JOIN `tabItem` i ON i.name = rs.service_name
+#         WHERE re.date = %(date)s
+#         ORDER BY rs.time ASC
+#     """, {"date": date}, as_dict=True)
+
+#     # Fetch all categories in the "Beauty" group
+#     categories = frappe.db.sql("""
+#         SELECT name, parent_item_group 
+#         FROM `tabItem Group`
+#         WHERE parent_item_group = 'Beauty'
+#     """, as_dict=True)
+
+#     # Generate time slots (00:00 - 23:00)
+#     time_slots = {}
+#     start_of_day = datetime.strptime('00:00', '%H:%M')
+#     end_of_day = datetime.strptime('23:00', '%H:%M')
+#     current_time = start_of_day
+#     while current_time <= end_of_day:
+#         time_range = f"{current_time.strftime('%H:%M')} - {(current_time + timedelta(hours=1)).strftime('%H:%M')}"
+#         time_slots[time_range] = {"bookings": [], "receptions": []}
+#         current_time += timedelta(hours=1)
+
+#     # Organize bookings by time slot
+#     for booking in bookings:
+#         service_time = booking["service_time"]
+#         start_of_hour = datetime.combine(datetime.min, service_time).replace(minute=0, second=0, microsecond=0)
+#         end_time = start_of_hour + timedelta(hours=1)
+#         time_range = f"{start_of_hour.strftime('%H:%M')} - {end_time.strftime('%H:%M')}"
+#         time_slots[time_range]["bookings"].append({
+#             "category": booking["category"],
+#             "customer": booking["customer"],
+#             "worker_name": booking["worker_name"],
+#             "service_name": booking["service_name"]
+#         })
+
+#     # Organize reception data by time slot
+#     for reception in receptions:
+#         reception_time = reception["reception_time"]
+#         start_of_hour = datetime.combine(datetime.min, reception_time).replace(minute=0, second=0, microsecond=0)
+#         end_time = start_of_hour + timedelta(hours=1)
+#         time_range = f"{start_of_hour.strftime('%H:%M')} - {end_time.strftime('%H:%M')}"
+#         time_slots[time_range]["receptions"].append({
+#             "category": booking["category"],
+#             "customer": booking["customer"],
+#             "worker_name": booking["worker_name"],
+#             "service_name": booking["service_name"]
+#         })
+
+#     # Return structured response
+#     return {
+#         "columns": [{"label": "الوقت", "fieldname": "time_range", "fieldtype": "Data", "width": 150}] +
+#                    [{"label": category["name"], "fieldname": category["name"], "fieldtype": "Data", "width": 150} for category in categories],
+#         "data": [
+#             {
+#                 "time_range": time_range,
+#                 "type": "booking",
+#                 "category": booking["category"],
+#                 "customer": booking["customer"],
+#                 "worker_name": booking["worker_name"],
+#                 "service_name": booking["service_name"]
+#             } for time_range, data in time_slots.items() for booking in data["bookings"]
+#         ] + [
+#             {
+#                 "time_range": time_range,
+#                 "type": "reception",
+#                 "category": reception["category"],
+#                 "customer": reception["customer"],
+#                 "worker_name": reception["worker_name"],
+#                 "service_name": reception["service_name"]
+#             } for time_range, data in time_slots.items() for reception in data["receptions"]
+#         ]
+#     }
 def get_default_paid_to_account(mode_of_payment):
     account = frappe.db.get_value('Mode of Payment Account', 
                                   {'parent': mode_of_payment, 'company': frappe.defaults.get_user_default('company')}, 
