@@ -472,14 +472,23 @@ def get_bookings(customer=None):
 
     bookings = frappe.get_all("Booking", filters=filters, fields=["name", "customer", "booking_date", "booking_status"])
     return bookings
-@frappe.whitelist()
-def get_last_5_bookings(customer=None):
-    filters = {}
-    if customer:
-        filters["customer"] = ["like", f"%{customer}%"]
+import frappe
 
-    # Fetching the last 5 bookings
-    bookings = frappe.get_all("Booking", filters=filters, fields=["name", "customer", "booking_date", "booking_status"], limit=5, order_by="booking_date desc")
+@frappe.whitelist()
+def get_last_5_bookings(customer):
+    if not customer:  # Ensure customer is provided
+        frappe.throw("يرجاء اختيار عميل", frappe.MandatoryError)
+
+    filters = {"docstatus": 1, "customer": ["like", f"%{frappe.db.escape(customer)}%"]}
+
+    # Fetch the last 5 submitted bookings
+    bookings = frappe.get_all(
+        "Booking", 
+        filters=filters, 
+        fields=["name", "customer", "booking_date", "booking_status"], 
+        limit=5, 
+        order_by="booking_date desc"
+    )
     
     return bookings
 @frappe.whitelist()
@@ -663,7 +672,7 @@ def get_booking_details(booking_id):
         return len(overlapping_services) < section_capacity
 
 @frappe.whitelist()
-def check_slot_availability(service_name=None, worker=None, time=None, duration=None, date=None, exclude_document=None):
+def check_slot_availability(service_name, worker, time, duration, date, exclude_document, customer, request):
     """التحقق من توفر الموعد مع القدرة الاستيعابية وإظهار اسم العميل والتاريخ ورقم الهاتف في رسالة الخطأ"""
     try:
         try:
@@ -687,34 +696,69 @@ def check_slot_availability(service_name=None, worker=None, time=None, duration=
         requested_end = requested_start + duration_minutes
 
         # استعلام للحصول على الحجوزات المتداخلة من جدول "الحجز"
-        overlapping_bookings = frappe.db.sql("""
-            SELECT 
-                rs.service_name, 
-                rs.worker,
-                rs.time as service_time,
-                b.customer,
-                b.mobile_no,
-                b.booking_date,
-                CASE 
-                    WHEN rs.duration REGEXP '^[0-9]+:[0-9]+' THEN 
-                        (
-                            CAST(SUBSTRING_INDEX(rs.duration, ':', 1) AS UNSIGNED) * 60 +
-                            CAST(SUBSTRING_INDEX(rs.duration, ':', -1) AS UNSIGNED)
-                        )
-                    ELSE CAST(rs.duration AS DECIMAL(10,2))
-                END as duration_minutes
-            FROM `tabReception Service` rs
-            JOIN `tabBooking` b ON rs.parent = b.name
-            WHERE b.docstatus < 2
-                AND rs.worker = %(worker)s
-                AND DATE(b.booking_date ) = %(date)s
-                AND b.name != %(exclude_document)s 
-                AND b.booking_status != 'ملغي'
-        """, {
-            'worker': worker,
-            'date': date,
-            'exclude_document':exclude_document
-        }, as_dict=True)
+        if request=="reception":
+            overlapping_bookings = frappe.db.sql("""
+                SELECT 
+                    rs.service_name, 
+                    rs.worker,
+                    rs.time as service_time,
+                    b.customer,
+                    b.mobile_no,
+                    b.booking_date,
+                    CASE 
+                        WHEN rs.duration REGEXP '^[0-9]+:[0-9]+' THEN 
+                            (
+                                CAST(SUBSTRING_INDEX(rs.duration, ':', 1) AS UNSIGNED) * 60 +
+                                CAST(SUBSTRING_INDEX(rs.duration, ':', -1) AS UNSIGNED)
+                            )
+                        ELSE CAST(rs.duration AS DECIMAL(10,2))
+                    END as duration_minutes
+                FROM `tabReception Service` rs
+                JOIN `tabBooking` b ON rs.parent = b.name
+                WHERE b.docstatus < 2
+                    AND rs.worker = %(worker)s
+                    AND DATE(b.booking_date ) = %(date)s
+                    AND b.name != %(exclude_document)s 
+                    AND b.customer != %(customer)s
+                    AND b.booking_status != 'ملغي'
+            """, {
+                'worker': worker,
+                'customer': customer,
+                'date': date,
+                'exclude_document':exclude_document
+            }, as_dict=True)
+        
+       
+        elif request=="booking" :
+            overlapping_bookings = frappe.db.sql("""
+                SELECT 
+                    rs.service_name, 
+                    rs.worker,
+                    rs.time as service_time,
+                    b.customer,
+                    b.mobile_no,
+                    b.booking_date,
+                    CASE 
+                        WHEN rs.duration REGEXP '^[0-9]+:[0-9]+' THEN 
+                            (
+                                CAST(SUBSTRING_INDEX(rs.duration, ':', 1) AS UNSIGNED) * 60 +
+                                CAST(SUBSTRING_INDEX(rs.duration, ':', -1) AS UNSIGNED)
+                            )
+                        ELSE CAST(rs.duration AS DECIMAL(10,2))
+                    END as duration_minutes
+                FROM `tabReception Service` rs
+                JOIN `tabBooking` b ON rs.parent = b.name
+                WHERE b.docstatus < 2
+                    AND rs.worker = %(worker)s
+                    AND DATE(b.booking_date ) = %(date)s
+                    AND b.name != %(exclude_document)s 
+                    AND b.booking_status != 'ملغي'
+            """, {
+                'worker': worker,
+                'date': date,
+                'exclude_document':exclude_document
+            }, as_dict=True)
+       
 
         # استعلام للحصول على الحجوزات المتداخلة من جدول "الاستقبال"
         overlapping_services = frappe.db.sql("""
@@ -914,3 +958,16 @@ def get_latest_stock_rate(item_code):
         limit=1
     )
     return latest_rate[0].valuation_rate if latest_rate else 0
+
+
+
+
+
+
+
+
+
+
+
+
+    
