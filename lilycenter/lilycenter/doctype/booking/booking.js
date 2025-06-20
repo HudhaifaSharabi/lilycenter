@@ -154,7 +154,9 @@ frappe.ui.form.on("Booking", {
                     time: current_row.time,
                     duration: duration,
                     date:frm.doc.booking_date,
-                    exclude_document: frm.doc.name
+                    exclude_document: frm.doc.name,
+                    customer: frm.doc.customer,
+                    request: 'booking'
                 },
                 async: false, // Ensure synchronous behavior before save
                 callback: function (r) {
@@ -278,132 +280,112 @@ frappe.ui.form.on('Reception Service', {
     time: function (frm, cdt, cdn) {
         let current_row = locals[cdt][cdn];
 
-        if (!current_row.time || !current_row.worker || !current_row.service_name || !current_row.duration) {
-            return;
-        }
-    
-        let duration = current_row.duration || '01:00:00'; // المدة الافتراضية
-        let duration_minutes = convertToMinutes(duration);
-    
-        // تحويل الوقت إلى دقائق
-        function convertToMinutes(time) {
-            let time_parts = time.split(':');
-            let hours = parseInt(time_parts[0]) || 0; // ساعات
-            let minutes = parseInt(time_parts[1]) || 0; // دقائق
-            return (hours * 60) + minutes;
-        }
-    
-        let requested_start = convertToMinutes(current_row.time);
-        let requested_end = requested_start + duration_minutes;
-    
-        // التحقق المحلي
-        let child_table = frm.doc.services || [];
-        let current_overlapping = 0;
-        let section_capacity = 1; // القيمة الافتراضية للقدرة الاستيعابية
-    
-        for (let row of child_table) {
-            if (row.name === current_row.name) continue; // تجاهل السجل الحالي
-    
-            if (row.worker === current_row.worker) {
-                let service_start = convertToMinutes(row.time);
-                let service_duration_minutes = convertToMinutes(row.duration || '01:00:00');
-                let service_end = service_start + service_duration_minutes;
-    
-                // التحقق من التداخل بين نفس الخدمة
-                if (!(requested_end <= service_start || requested_start >= service_end)) {
-                    if (row.service_name === current_row.service_name) {
-                        frappe.msgprint({
-                            title: __('خطأ في الحجز'),
-                            message: __('تداخل الحجز: الخدمة "{0}" مذكوره بلفعل في الجدول   لنفس الموظف الساعة {1} وتستغرق {2}. الرجاء اختيار وقت مختلف.', 
-                                [row.service_name, row.time, service_end]
-                            ),
-                            indicator: 'red'
-                        });
-                        frappe.model.set_value(cdt, cdn, 'time', '');
-                        return;
-                    } else {
-                        frappe.msgprint({
-                            title: __('خطأ في الحجز'),
-                            message: __('تداخل الحجز: الموظف  لديه حجز آخر لخدمة مختلفة في نفس الجدول لنفس العميل  الساعة {0} وتستغرق {1}. الرجاء اختيار وقت مختلف.', 
-                                [  row.time, service_end]
-                            ),
-                            indicator: 'red'
-                        });
-                        frappe.model.set_value(cdt, cdn, 'time', '');
-                        return;
+        if(current_row.time){
+            if (!current_row.time || !current_row.worker || !current_row.service_name || !current_row.duration ) {
+                frappe.msgprint({
+                    title: __('خطأ'),
+                    message: __(`يرجى ملء جميع الحقول المطلوبة (اسم الخدمة، الموظف،الوقت ، المدة)`),
+                    indicator: 'red'
+                });
+                return;
+            }
+        
+            let duration = current_row.duration || '01:00:00'; // المدة الافتراضية
+            let duration_minutes = convertToMinutes(duration);
+        
+            // تحويل الوقت إلى دقائق
+            function convertToMinutes(time) {
+                let time_parts = time.split(':');
+                let hours = parseInt(time_parts[0]) || 0; // ساعات
+                let minutes = parseInt(time_parts[1]) || 0; // دقائق
+                return (hours * 60) + minutes;
+            }
+        
+            let requested_start = convertToMinutes(current_row.time);
+            let requested_end = requested_start + duration_minutes;
+        
+            // التحقق المحلي
+            let child_table = frm.doc.services || [];
+            let current_overlapping = 0;
+            let section_capacity = 1; // القيمة الافتراضية للقدرة الاستيعابية
+        
+            for (let row of child_table) {
+                if (row.name === current_row.name) continue; // تجاهل السجل الحالي
+        
+                if (row.worker === current_row.worker) {
+                    let service_start = convertToMinutes(row.time);
+                    let service_duration_minutes = convertToMinutes(row.duration || '01:00:00');
+                    let service_end = service_start + service_duration_minutes;
+        
+                    // التحقق من التداخل بين نفس الخدمة
+                    if (!(requested_end <= service_start || requested_start >= service_end)) {
+                        if (row.service_name === current_row.service_name) {
+                            frappe.msgprint({
+                                title: __('خطأ في الحجز'),
+                                message: __('تداخل الحجز: الخدمة "{0}" مذكوره بلفعل في الجدول لنفس الموظف الساعة {1} وتستغرق {2}. الرجاء اختيار وقت مختلف.', 
+                                    [row.service_name, row.time, service_end]
+                                ),
+                                indicator: 'red'
+                            });
+                            frappe.model.set_value(cdt, cdn, 'time', '');
+                            return;
+                        } else {
+                            frappe.msgprint({
+                                title: __('خطأ في الحجز'),
+                                message: __('تداخل الحجز: الموظف لديه حجز آخر لخدمة مختلفة في نفس الجدول لنفس العميل الساعة {0} وتستغرق {1}. الرجاء اختيار وقت مختلف.', 
+                                    [row.time, service_end]
+                                ),
+                                indicator: 'red'
+                            });
+                            frappe.model.set_value(cdt, cdn, 'time', '');
+                            return;
+                        }
                     }
                 }
             }
-        }
-    
-        // جلب القدرة الاستيعابية للخدمة
-        // frappe.call({
-        //     method: 'frappe.client.get_value',
-        //     args: {
-        //         doctype: 'Worker Commission',
-        //         filters: { worker: current_row.worker, service_name: current_row.service_name },
-        //         fieldname: 'section_capacity'
-        //     },
-        //     callback: function (r) {
-        //         if (r.message && r.message.section_capacity) {
-        //             section_capacity = parseInt(r.message.section_capacity);
-        //         }
-    
-        //         // التحقق من القدرة الاستيعابية
-        //         if (current_overlapping >= section_capacity) {
-        //             frappe.msgprint({
-        //                 title: __('خطأ في الحجز'),
-        //                 message: __('تم تجاوز القدرة الاستيعابية لهذا الموظف لهذه الخدمة.'),
-        //                 indicator: 'red'
-        //             });
-        //             frappe.model.set_value(cdt, cdn, 'time', '');
-        //         } else {
-        //             frappe.show_alert({
-        //                 message: __('تم حجز الموعد بنجاح.'),
-        //                 indicator: 'green'
-        //             });
-        //         }
-        //     }
-        // });
-        // التحقق من التداخل مع الحجوزات في قاعدة البيانات
-        frappe.call({
-            method: 'lilycenter.lilycenter.doctype.reception_form.reception_form.check_slot_availability',
-            args: {
-                service_name: current_row.service_name,
-                worker: current_row.worker,
-                time: current_row.time,
-                duration: duration,
-                date:frm.doc.booking_date,
-                exclude_document: frm.doc.name
-            },
-            callback: function (r) {
-                if (r.message) {
-                    if (r.message.error) {
-                        frappe.msgprint({
-                            title: __('خطأ'),
-                            message: __(r.message.error),
-                            indicator: 'red'
-                        });
-                        frappe.model.set_value(cdt, cdn, 'time', '');
-                        return;
-                    }
-    
-                    if (!r.message.available) {
-                        frappe.msgprint({
-                            title: __('الموعد غير متاح'),
-                            message: __(`تم تجاوز القدرة الاستيعابية لهذا الموظف لخدمة ${current_row.service_name} حيث لديه عميل في الساعه ${r.message.current_service_time} وهذه الخدمه تستغرق ${duration}  `),
-                            indicator: 'red'
-                        });
-                        frappe.model.set_value(cdt, cdn, 'time', '');
-                    } else {
-                        frappe.show_alert({
-                            message: __('الموعد متاح'),
-                            indicator: 'green'
-                        });
+        
+            // التحقق من التداخل مع الحجوزات في قاعدة البيانات
+            frappe.call({
+                method: 'lilycenter.lilycenter.doctype.reception_form.reception_form.check_slot_availability',
+                args: {
+                    service_name: current_row.service_name,
+                    worker: current_row.worker,
+                    time: current_row.time,
+                    duration: duration,
+                    date: frm.doc.booking_date,
+                    exclude_document: frm.doc.name,
+                    customer: frm.doc.customer,
+                    request: 'booking'
+                },
+                callback: function (r) {
+                    if (r.message) {
+                        if (r.message.error) {
+                            frappe.msgprint({
+                                title: __('خطأ'),
+                                message: __(r.message.error),
+                                indicator: 'red'
+                            });
+                            frappe.model.set_value(cdt, cdn, 'time', '');
+                            return;
+                        }
+        
+                        if (!r.message.available) {
+                            frappe.msgprint({
+                                title: __('الموعد غير متاح'),
+                                message: __(`تم تجاوز القدرة الاستيعابية لهذا الموظف لخدمة ${current_row.service_name} حيث لديه عميل في الساعه ${r.message.current_service_time} وهذه الخدمه تستغرق ${duration}  `),
+                                indicator: 'red'
+                            });
+                            frappe.model.set_value(cdt, cdn, 'time', '');
+                        } else {
+                            frappe.show_alert({
+                                message: __('الموعد متاح'),
+                                indicator: 'green'
+                            });
+                        }
                     }
                 }
-            }
-        });
+            });
+        }
     },
     discount: function(frm, cdt, cdn) {
         let row = locals[cdt][cdn];
