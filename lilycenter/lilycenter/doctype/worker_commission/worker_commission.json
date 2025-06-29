@@ -1,7 +1,6 @@
 {
  "actions": [],
  "allow_import": 1,
- "allow_rename": 1,
  "autoname": "naming_series:",
  "creation": "2024-09-22 20:03:46.806335",
  "doctype": "DocType",
@@ -54,7 +53,11 @@
   {
    "fieldname": "service_name",
    "fieldtype": "Link",
+   "in_filter": 1,
+   "in_global_search": 1,
    "in_list_view": 1,
+   "in_preview": 1,
+   "in_standard_filter": 1,
    "label": "\u0627\u0644\u062e\u062f\u0645\u0647",
    "options": "Service",
    "reqd": 1
@@ -103,7 +106,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-06-19 19:20:16.621284",
+ "modified": "2025-06-24 15:29:56.548155",
  "modified_by": "Administrator",
  "module": "Lilycenter",
  "name": "Worker Commission",
