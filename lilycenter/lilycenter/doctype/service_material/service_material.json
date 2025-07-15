@@ -19,13 +19,15 @@
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "\u0627\u0644\u0645\u0646\u062a\u062c",
-   "options": "Item"
+   "options": "Item",
+   "reqd": 1
   },
   {
    "fieldname": "quantity",
    "fieldtype": "Float",
    "in_list_view": 1,
-   "label": "\u0627\u0644\u0643\u0645\u064a\u0629"
+   "label": "\u0627\u0644\u0643\u0645\u064a\u0629",
+   "reqd": 1
   },
   {
    "fieldname": "column_break_jcev",
@@ -37,7 +39,8 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "\u0648\u062d\u062f\u0629 \u0627\u0644\u0642\u064a\u0627\u0633",
-   "read_only": 1
+   "read_only": 1,
+   "reqd": 1
   },
   {
    "fieldname": "naming_series",
@@ -48,16 +51,18 @@
    "read_only": 1
   }
  ],
+ "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-01-13 17:53:20.920717",
+ "modified": "2025-07-15 17:05:21.791097",
  "modified_by": "Administrator",
  "module": "Lilycenter",
  "name": "Service Material",
  "naming_rule": "By \"Naming Series\" field",
  "owner": "Administrator",
  "permissions": [],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": []
