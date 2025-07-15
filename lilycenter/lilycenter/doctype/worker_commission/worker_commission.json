@@ -1,145 +1,146 @@
 {
- "actions": [],
- "allow_import": 1,
- "autoname": "naming_series:",
- "creation": "2024-09-22 20:03:46.806335",
- "doctype": "DocType",
- "engine": "InnoDB",
- "field_order": [
-  "worker",
-  "naming_series",
-  "column_break_zhmo",
-  "worker_name",
-  "section_break_xqbi",
-  "service_name",
-  "column_break_ddct",
-  "section_break_vwwx",
-  "duration",
-  "column_break_tpra",
-  "section_capacity",
-  "section_break_iqad",
-  "commission"
- ],
- "fields": [
-  {
-   "fieldname": "worker",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "label": "\u0627\u0644\u0645\u0648\u0638\u0641",
-   "options": "Employee",
-   "reqd": 1
-  },
-  {
-   "fieldname": "commission",
-   "fieldtype": "Table",
-   "label": "\u062a\u0641\u0627\u0635\u064a\u0644 \u0627\u0644\u0639\u0645\u0648\u0644\u0629",
-   "options": "Commission Details",
-   "reqd": 1
-  },
-  {
-   "fetch_from": "worker.employee_name",
-   "fieldname": "worker_name",
-   "fieldtype": "Data",
-   "label": "\u0627\u0633\u0645 \u0627\u0644\u0645\u0648\u0638\u0641 \u0627\u0644\u0643\u0627\u0645\u0644",
-   "read_only": 1
-  },
-  {
-   "fieldname": "naming_series",
-   "fieldtype": "Data",
-   "label": "Naming Series",
-   "options": "WOR-COM-",
-   "read_only": 1
-  },
-  {
-   "fieldname": "service_name",
-   "fieldtype": "Link",
-   "in_filter": 1,
-   "in_global_search": 1,
-   "in_list_view": 1,
-   "in_preview": 1,
-   "in_standard_filter": 1,
-   "label": "\u0627\u0644\u062e\u062f\u0645\u0647",
-   "options": "Service",
-   "reqd": 1
-  },
-  {
-   "fieldname": "column_break_zhmo",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "section_break_iqad",
-   "fieldtype": "Section Break"
-  },
-  {
-   "default": "1",
-   "description": "\u0639\u062f\u062f \u0627\u0644\u062d\u0627\u0644\u0627\u062a \u0627\u0644\u062a\u064a \u064a\u0645\u0643\u0646 \u0627\u0633\u062a\u0642\u0628\u0627\u0644\u0647\u0627 \u062e\u0644\u0627\u0644 \u0641\u062a\u0631\u0647 \u0627\u0644\u062e\u062f\u0645\u0647",
-   "fieldname": "section_capacity",
-   "fieldtype": "Int",
-   "label": "\u0627\u0644\u0637\u0627\u0642\u0629 \u0627\u0644\u0627\u0633\u062a\u064a\u0639\u0627\u0628\u064a\u0629",
-   "non_negative": 1,
-   "reqd": 1
-  },
-  {
-   "default": "00:00:00",
-   "description": "\u0627\u0644\u0648\u0642\u062a \u0627\u0644\u0645\u0633\u062a\u063a\u0631\u0642 \u0644\u0627\u0643\u0645\u0627\u0644 \u0627\u0644\u062e\u062f\u0645\u0647",
-   "fieldname": "duration",
-   "fieldtype": "Time",
-   "label": "\u0648\u0642\u062a \u0627\u0644\u062e\u062f\u0645\u0629",
-   "reqd": 1
-  },
-  {
-   "fieldname": "section_break_xqbi",
-   "fieldtype": "Section Break"
-  },
-  {
-   "fieldname": "column_break_ddct",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "section_break_vwwx",
-   "fieldtype": "Section Break"
-  },
-  {
-   "fieldname": "column_break_tpra",
-   "fieldtype": "Column Break"
-  }
- ],
- "index_web_pages_for_search": 1,
- "links": [],
- "modified": "2025-06-24 15:29:56.548155",
- "modified_by": "Administrator",
- "module": "Lilycenter",
- "name": "Worker Commission",
- "naming_rule": "By \"Naming Series\" field",
- "owner": "Administrator",
- "permissions": [
-  {
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "System Manager",
-   "share": 1,
-   "write": 1
-  },
-  {
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "reception",
-   "select": 1,
-   "share": 1
-  }
- ],
- "show_title_field_in_link": 1,
- "sort_field": "modified",
- "sort_order": "DESC",
- "states": [],
- "title_field": "worker_name",
- "track_changes": 1
+  "actions": [],
+  "allow_import": 1,
+  "allow_rename": 1,
+  "autoname": "naming_series:",
+  "creation": "2024-09-22 20:03:46.806335",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "worker",
+    "naming_series",
+    "column_break_zhmo",
+    "worker_name",
+    "section_break_xqbi",
+    "service_name",
+    "column_break_ddct",
+    "section_break_vwwx",
+    "duration",
+    "column_break_tpra",
+    "section_capacity",
+    "section_break_iqad",
+    "commission"
+  ],
+  "fields": [
+    {
+      "fieldname": "worker",
+      "fieldtype": "Link",
+      "in_list_view": 1,
+      "label": "الموظف",
+      "options": "Employee",
+      "reqd": 1
+    },
+    {
+      "fieldname": "naming_series",
+      "fieldtype": "Select",
+      "label": "Naming Series",
+      "options": "WOR-COM-\n",
+      "reqd": 1
+    },
+    {
+      "fieldname": "column_break_zhmo",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fetch_from": "worker.employee_name",
+      "fieldname": "worker_name",
+      "fieldtype": "Data",
+      "label": "اسم الموظف الكامل",
+      "read_only": 1
+    },
+    {
+      "fieldname": "section_break_xqbi",
+      "fieldtype": "Section Break"
+    },
+    {
+      "fieldname": "service_name",
+      "fieldtype": "Link",
+      "label": "الخدمه",
+      "options": "Service",
+      "in_list_view": 1,
+      "in_filter": 1,
+      "in_standard_filter": 1,
+      "in_global_search": 1,
+      "in_preview": 1,
+      "reqd": 1
+    },
+    {
+      "fieldname": "column_break_ddct",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "section_break_vwwx",
+      "fieldtype": "Section Break"
+    },
+    {
+      "default": "00:00:00",
+      "description": "الوقت المستغرق لاكمال الخدمه",
+      "fieldname": "duration",
+      "fieldtype": "Time",
+      "label": "وقت الخدمة",
+      "reqd": 1
+    },
+    {
+      "fieldname": "column_break_tpra",
+      "fieldtype": "Column Break"
+    },
+    {
+      "default": "1",
+      "description": "عدد الحالات التي يمكن استقبالها خلال فتره الخدمه",
+      "fieldname": "section_capacity",
+      "fieldtype": "Int",
+      "label": "الطاقة الاستيعابية",
+      "non_negative": 1,
+      "reqd": 1
+    },
+    {
+      "fieldname": "section_break_iqad",
+      "fieldtype": "Section Break"
+    },
+    {
+      "fieldname": "commission",
+      "fieldtype": "Table",
+      "label": "تفاصيل العمولة",
+      "options": "Commission Details",
+      "reqd": 1
+    }
+  ],
+  "index_web_pages_for_search": 1,
+  "links": [],
+  "modified": "2025-06-24 15:29:56.548155",
+  "modified_by": "Administrator",
+  "module": "Lilycenter",
+  "name": "Worker Commission",
+  "naming_rule": "By \"Naming Series\" field",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "create": 1,
+      "delete": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "read": 1,
+      "report": 1,
+      "role": "System Manager",
+      "share": 1,
+      "write": 1
+    },
+    {
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "read": 1,
+      "report": 1,
+      "role": "reception",
+      "select": 1,
+      "share": 1
+    }
+  ],
+  "show_title_field_in_link": 1,
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "states": [],
+  "title_field": "worker_name",
+  "track_changes": 1
 }
